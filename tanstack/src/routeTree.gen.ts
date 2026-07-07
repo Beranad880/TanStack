@@ -10,33 +10,43 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiAhojRouteImport } from './routes/api/ahoj'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAhojRoute = ApiAhojRouteImport.update({
+  id: '/api/ahoj',
+  path: '/api/ahoj',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/ahoj': typeof ApiAhojRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/ahoj': typeof ApiAhojRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/ahoj': typeof ApiAhojRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/api/ahoj'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/api/ahoj'
+  id: '__root__' | '/' | '/api/ahoj'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiAhojRoute: typeof ApiAhojRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +58,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/ahoj': {
+      id: '/api/ahoj'
+      path: '/api/ahoj'
+      fullPath: '/api/ahoj'
+      preLoaderRoute: typeof ApiAhojRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiAhojRoute: ApiAhojRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
