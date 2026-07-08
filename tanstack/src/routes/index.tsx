@@ -35,7 +35,7 @@ function App() {
             to="/aicheck"
             className="demo-button demo-button-secondary relative z-10 rounded-full px-8 py-3 shadow-md transition-all hover:scale-105 no-underline"
           >
-            Zkusit Google Gemini (/aicheck)
+            Zkusit Meta LLama (/aicheck)
           </Link>
           <Link
             to="/browsercheck"
