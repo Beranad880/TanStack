@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as DbcheckRouteImport } from './routes/dbcheck'
+import { Route as AicheckRouteImport } from './routes/aicheck'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiAhojRouteImport } from './routes/api/ahoj'
 
 const DbcheckRoute = DbcheckRouteImport.update({
   id: '/dbcheck',
   path: '/dbcheck',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AicheckRoute = AicheckRouteImport.update({
+  id: '/aicheck',
+  path: '/aicheck',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -31,30 +37,34 @@ const ApiAhojRoute = ApiAhojRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/aicheck': typeof AicheckRoute
   '/dbcheck': typeof DbcheckRoute
   '/api/ahoj': typeof ApiAhojRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/aicheck': typeof AicheckRoute
   '/dbcheck': typeof DbcheckRoute
   '/api/ahoj': typeof ApiAhojRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/aicheck': typeof AicheckRoute
   '/dbcheck': typeof DbcheckRoute
   '/api/ahoj': typeof ApiAhojRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dbcheck' | '/api/ahoj'
+  fullPaths: '/' | '/aicheck' | '/dbcheck' | '/api/ahoj'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dbcheck' | '/api/ahoj'
-  id: '__root__' | '/' | '/dbcheck' | '/api/ahoj'
+  to: '/' | '/aicheck' | '/dbcheck' | '/api/ahoj'
+  id: '__root__' | '/' | '/aicheck' | '/dbcheck' | '/api/ahoj'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AicheckRoute: typeof AicheckRoute
   DbcheckRoute: typeof DbcheckRoute
   ApiAhojRoute: typeof ApiAhojRoute
 }
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/dbcheck'
       fullPath: '/dbcheck'
       preLoaderRoute: typeof DbcheckRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/aicheck': {
+      id: '/aicheck'
+      path: '/aicheck'
+      fullPath: '/aicheck'
+      preLoaderRoute: typeof AicheckRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -87,6 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AicheckRoute: AicheckRoute,
   DbcheckRoute: DbcheckRoute,
   ApiAhojRoute: ApiAhojRoute,
 }

@@ -23,13 +23,19 @@ function App() {
           minimalistická a moderní stránka.
         </p>
         
-        {/* Tlačítko pro ověření databáze */}
-        <div className="mt-8 flex justify-center">
+        {/* Tlačítka pro ověření */}
+        <div className="mt-8 flex justify-center gap-4 flex-wrap">
           <Link
             to="/dbcheck"
             className="demo-button relative z-10 rounded-full px-8 py-3 shadow-md transition-all hover:scale-105 no-underline"
           >
             Ověřit databázi (/dbcheck)
+          </Link>
+          <Link
+            to="/aicheck"
+            className="demo-button demo-button-secondary relative z-10 rounded-full px-8 py-3 shadow-md transition-all hover:scale-105 no-underline"
+          >
+            Zkusit Google Gemini (/aicheck)
           </Link>
         </div>
 
