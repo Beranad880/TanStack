@@ -51,7 +51,7 @@ export async function runAdGenerationPipeline(
   const endTime = performance.now();
   const latencyMs = Math.round(endTime - startTime);
 
-  // Since we are running Google Gemini 3.5 Flash, the cost is extremely minimal
+  // Since we are running Google Gemini, the cost is extremely minimal
   // (under $0.001 USD for typical site analysis & generation), so we round it to $0.00.
   const costUsd = 0.00;
 

@@ -19,7 +19,7 @@ const askGeminiFn = createServerFn({ method: 'POST' })
         }
       }
 
-      const modelName = geminiConfig.model || 'gemini-3.5-flash'
+      const modelName = geminiConfig.model || 'gemini-1.5-flash'
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`
       let response;
       for (let attempt = 1; attempt <= 3; attempt++) {
@@ -105,7 +105,7 @@ function AiCheckComponent() {
     <main className="flex min-h-screen items-center justify-center p-4">
       <section className="island-shell rise-in max-w-2xl w-full rounded-[2rem] p-8 sm:p-12">
         <h1 className="display-title mb-6 text-3xl font-extrabold text-[var(--sea-ink)] text-center capitalize">
-          Google {geminiConfig.model.replace('models/', '').replace(/-/g, ' ')}
+          Agent Gemini
         </h1>
 
         <div className="flex flex-col gap-4">
@@ -128,7 +128,7 @@ function AiCheckComponent() {
             disabled={loading || !prompt.trim()}
             className="demo-button w-full relative z-10 rounded-full px-6 py-3 shadow-md transition-all hover:scale-[1.01]"
           >
-            {loading ? `Generování odpovědi přes ${geminiConfig.model}...` : 'Odeslat dotaz do Gemini'}
+            {loading ? 'Generování odpovědi přes agenta Gemini...' : 'Odeslat dotaz do Gemini'}
           </button>
 
           {error && (
