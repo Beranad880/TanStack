@@ -126,3 +126,30 @@ npm run deploy
 | `npm run db:migrate:local` | `wrangler d1 migrations apply ... --local` | Aplikuje SQL změny na lokální SQLite |
 | `npm run db:migrate:prod` | `wrangler d1 migrations apply ... --remote` | Aplikuje SQL změny na Cloudflare D1 |
 | `npm run lint` | `eslint` | Provede analýzu kódu a vyhledá chyby |
+
+---
+
+## 📝 Poznámky k zadání (Snaprime Hiring Assignment)
+
+### Přístup a Architektura
+Tento úkol (vertical slice) jsem postavil na **TanStack Start** pro full-stack routing a React vrstvu v kombinaci s **Cloudflare Workers, Pages a D1**. Toto nastavení zajišťuje, že aplikace i databáze běží nativně na edge infrastruktuře, což splňuje požadavky na perzistenci, rychlost a reálnou nasaditelnost.
+
+Pro hlavní úkol (extrakce a generování):
+1. **Extrakce**: Zaintegroval jsem Cloudflare Browser Rendering (`@cloudflare/puppeteer`) pro zpracování stránek vykreslovaných JavaScriptem (JS-rendered). Protože Puppeteer uvnitř edge workerů občas může narážet na timeouty nebo limity bezplatného tarifu, vytvořil jsem navíc explicitní **graceful fallback** (záložní řešení) využívající standardní `fetch` + `cheerio`. Díky tomu, i když headless prohlížeč selže, pipeline nespadne, ale elegantně se přepne a pokusí se alespoň naparsovat surová HTML metadata a OpenGraph obrázky.
+2. **AI vrstva**: Vybral jsem **Google Gemini API** pro jeho rychlost a nativní schopnost generovat JSON schémata přímo přes standardní HTTP požadavky. To mi umožnilo striktně typovat odpovědi LLM (za použití validátoru `zod`) bez nutnosti spoléhat na těžkopádné knihovny. Přidal jsem striktní kontrolu: pokud LLM nedokáže na stránce data najít, dosadí "not found". Naše pipeline to pak explicitně zachytí a raději generování přeruší, než aby si vymýšlela fakta nebo produkovala nesmyslné reklamy.
+3. **Perzistence a Náhledy**: Reklamy a profily značek se trvale ukládají do Cloudflare D1 přes Drizzle ORM. Úpravy reklam a generování jednotlivých reklamních konceptů fungují jako přímé úpravy konkrétních řádků (Row updates) ve SQLite databázi (`saveAdEditFn` a `regenerateAdFn`). To zaručuje, že úprava jedné reklamy a přegenerování druhé si navzájem nikdy nepřepíší stav.
+
+### Co bylo záměrně odloženo (a proč)
+Vzhledem k rozpočtu zhruba 5-6 hodin jsem upřednostnil vytvoření kompletní, plně funkční pipeline (Scrape -> Extract -> DB -> UI -> Edit/Regenerate). U následujících bodů jsem udělal vědomé kompromisy:
+* **Deduplikace obrázků a pokročilé filtrování:** V tuto chvíli vybíráme kandidátské obrázky podle základních CSS parametrů a minimální velikosti (pro odfiltrování ikon a prvků UI) a limitujeme je na 10 kusů. Pokročilá deduplikace nebo vektorové vyhodnocování relevance byly vynechány, protože základní heuristické filtrování bohatě stačí k prokázání, že jádro aplikace (core loop) funguje.
+* **Precizní extrakce barev značky:** Pro vyhledání barevných kódů (hex) jsem použil jednoduchý regulární výraz na zdrojový HTML kód stránky, který pak předávám LLM jako kontext. Získávat *skutečné* vypočítané CSS proměnné přímo přes Puppeteer by bylo sice přesnější, ale zbytečně časově náročné kvůli procházení různorodých DOM stromů. AI navíc z nabídky hex kódů dokáže vybrat barvy překvapivě dobře.
+* **Autentizace / Uživatelské účty:** Není součástí řešení. Místo toho databáze pro udržení relace spoléhá na automaticky generovaná unikátní ID (`siteId`), která se drží v URL.
+* **Komplexní ukládání do cache (LLM Caching):** Přestože D1 ukládá výsledné reklamy, mezikroky samotné extrakce LLM u opakujících se URL adres necachuji. Vynechal jsem to, protože hlavním cílem bylo prokázat, že generovací pipeline funguje, nikoliv optimalizovat náklady na API za duplicitní dotazy.
+
+### Jak byl při vývoji využit AI Agent
+* **Jakého agenta jsem použil:** Používal jsem pokročilého autonomního programovacího IDE asistenta (Antigravity).
+* **V čem mi pomohl:** Agent byl naprosto klíčový při sestavování struktury pro Drizzle schéma, propojení databáze D1 se serverovými funkcemi v TanStack Start a při generování složitého boilerplate kódu pro Cloudflare Puppeteer. Také hodně pomohl s refaktoringem uživatelského rozhraní, aby používalo čistý a moderní design systém.
+* **Kde udělal chybu a jak se to muselo opravit:** 
+  1. Agent zpočátku bojoval s rozdílem mezi proměnnými prostředí (`env`) v Cloudflare Workerech a běžným Node.js `process.env`. Protože TanStack Start pracuje s objektem `env` v edge funkcích trochu jinak, musel jsem ho explicitně instruovat, aby proměnné `env` předával přímo ze serverových funkcí a nespoléhal na globální `process`.
+  2. Jazykový model (Gemini API) si na začátku začal vymýšlet (halucinovat) odpovědi u stránek, kde chyběl potřebný obsah. S agentem jsem musel poladit system prompt a zavést striktní Zod schéma, které model nutí odpovědět `"not found"`. Následně jsme museli napsat bezpečnostní pojistku (pipeline guard), která celý proces zruší, pokud na nás vyskočí hodnota `"not found"`.
+  3. Kvůli mému trochu nepřesnému zadání, aby se "všechno v aplikaci přepsalo na Gemini 3.5 Flash", agent omylem přepsal i název modelu ve vnitřním API volání. Jelikož verze `gemini-3.5-flash` na backendu Googlu zatím neexistuje, začalo API padat (hlásilo chyby 404/503). Agenta jsem pak musel navést, aby na backendu vrátil stabilní verzi `gemini-2.5-flash`, zatímco v uživatelském rozhraní (UI) nechal nápisy na "3.5", jak jsem původně chtěl.
