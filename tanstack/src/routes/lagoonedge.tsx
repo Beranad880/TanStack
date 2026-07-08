@@ -466,7 +466,6 @@ function LagoonedgeComponent() {
                     type="text"
                     value={inputUrl}
                     onChange={(e) => setInputUrl(e.target.value)}
-                    placeholder="example.com"
                     disabled={isPending}
                     required
                     className="demo-input p-3 pl-10 text-sm rounded-xl"
