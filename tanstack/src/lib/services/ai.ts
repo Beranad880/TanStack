@@ -261,14 +261,27 @@ ${candidateImages.length > 0 ? candidateImages.join('\n') : 'No images available
     }));
   } catch (error: any) {
     console.error('generateAds failed:', error.message);
-    // Fallback ad in case of failure
     const fallbacks = [];
+    
+    // Různé varianty textů pro fallback
+    const headlines = [
+      `Objevte ${brandProfile.companyName !== 'not found' ? brandProfile.companyName : 'náš web'}`,
+      `Proč si vybrat ${brandProfile.companyName !== 'not found' ? brandProfile.companyName : 'nás'}?`,
+      `To nejlepší z ${brandProfile.companyName !== 'not found' ? brandProfile.companyName : 'naší nabídky'}`
+    ];
+    
+    const primaryTexts = [
+      `Zjistěte více o ${brandProfile.companyName !== 'not found' ? brandProfile.companyName : 'naší nabídce'}. ${brandProfile.valueProposition !== 'not found' ? brandProfile.valueProposition : 'Špičkové produkty a služby pro vás.'}`,
+      `Jsme tu pro vás. ${brandProfile.description !== 'not found' ? brandProfile.description.substring(0, 80) + '...' : 'Připojte se k tisícům spokojených zákazníků.'} Podívejte se na náš web.`,
+      `Hledáte kvalitu a spolehlivost? ${brandProfile.companyName !== 'not found' ? brandProfile.companyName : 'My'} vám přinášíme přesně to, co potřebujete.`
+    ];
+
     for (let i = 0; i < count; i++) {
       fallbacks.push({
-        creativeIdea: `Základní návrh reklamy pro ${brandProfile.companyName !== 'not found' ? brandProfile.companyName : 'značku'}`,
-        primaryText: `Zjistěte více o ${brandProfile.companyName !== 'not found' ? brandProfile.companyName : 'naší nabídce'}. ${brandProfile.valueProposition !== 'not found' ? brandProfile.valueProposition : 'Špičkové produkty a služby pro vás.'}`,
-        headline: `Navštivte ${brandProfile.companyName !== 'not found' ? brandProfile.companyName : 'náš web'}`,
-        description: brandProfile.description !== 'not found' ? brandProfile.description.substring(0, 70) + (brandProfile.description.length > 70 ? '...' : '') : 'Vítejte na naší platformě.',
+        creativeIdea: `Základní produktový koncept zaměřený na hlavní hodnoty značky.`,
+        primaryText: primaryTexts[i % primaryTexts.length],
+        headline: headlines[i % headlines.length],
+        description: brandProfile.description !== 'not found' ? brandProfile.description.substring(0, 50) + '...' : 'Zjistěte více informací.',
         cta: i % 2 === 0 ? 'Zjistit více' : 'Více informací',
         imageUrl: candidateImages.length > i ? candidateImages[i] : (candidateImages.length > 0 ? candidateImages[0] : null)
       });
