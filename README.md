@@ -25,38 +25,43 @@ Aplikace obsahuje 3 interaktivní testovací stránky, které demonstrují možn
 ## 📂 Adresářová struktura
 
 ```
-tanstack/
+tanstack-repo/ (Root)
 ├── .github/                # GitHub Actions konfigurace (automatický deploy na Cloudflare)
-├── drizzle/                # SQL migrační soubory vygenerované Drizzle Kit
-├── src/                    # Zdrojový kód aplikace
-│   ├── db/                 # Databázová konfigurace
-│   │   ├── index.ts        # Inicializace Drizzle ORM (používá cloudflare:workers pro bezpečný import)
-│   │   └── schema.ts       # Databázové schéma (tabulky todos a protocols)
-│   ├── routes/             # Souborově orientované směrování (file-based routing)
-│   │   ├── api/            # Serverové API endpointy
-│   │   │   └── ahoj.ts     # Ukázkové API vracející statický JSON
-│   │   ├── __root.tsx      # Globální layout, HTML kostra, správa témat a stylů
-│   │   ├── index.tsx       # Hlavní domovská stránka (/)
-│   │   ├── dbcheck.tsx     # Loader a UI pro kontrolu zápisu do D1 databáze
-│   │   ├── aicheck.tsx     # UI a serverová funkce pro Llama 3.2 Workers AI
-│   │   └── browsercheck.tsx # UI a serverová funkce pro focení webů přes Puppeteer
-│   ├── routeTree.gen.ts    # Automaticky generovaný strom tras (TSR)
-│   ├── router.tsx          # Konfigurace TanStack routeru
-│   └── styles.css          # Globální CSS, barevná témata a Tailwind CSS v4.0 konfigurace
-├── .env                    # Lokální environmentální proměnné (tokeny, API klíče)
-├── drizzle.config.ts       # Konfigurace generátoru migrací Drizzle Kit
-├── package.json            # NPM závislosti, metadata a skripty
-├── tsconfig.json           # Konfigurace TypeScriptu
-├── tsr.config.json         # Konfigurace generátoru tras TanStack Router
-├── vite.config.ts          # Vite sestavení (pluginy React, Tailwind, Cloudflare, TanStack)
-└── wrangler.jsonc          # Produkční konfigurace Cloudflare (bindings pro D1, AI, Browser)
+├── README.md               # Tento dokument
+└── tanstack/               # Hlavní složka s projektem
+    ├── drizzle/            # SQL migrační soubory vygenerované Drizzle Kit
+    ├── src/                # Zdrojový kód aplikace
+    │   ├── db/             # Databázová konfigurace
+    │   │   ├── index.ts    # Inicializace Drizzle ORM (s bezpečným edge importem)
+    │   │   └── schema.ts   # Databázové schéma (tabulky todos a protocols)
+    │   ├── routes/         # Souborově orientované směrování (file-based routing)
+    │   │   ├── api/        # Serverové API endpointy
+    │   │   │   └── ahoj.ts # Ukázkové API vracející statický JSON
+    │   │   ├── __root.tsx  # Globální layout, HTML kostra, správa témat a stylů
+    │   │   ├── index.tsx   # Hlavní domovská stránka (/)
+    │   │   ├── dbcheck.tsx # Loader a UI pro kontrolu zápisu do D1 databáze
+    │   │   ├── aicheck.tsx # UI a serverová funkce pro Llama 3.2 Workers AI
+    │   │   └── browsercheck.tsx # UI a serverová funkce pro focení webů přes Puppeteer
+    │   ├── routeTree.gen.ts # Automaticky generovaný strom tras (TSR)
+    │   ├── router.tsx      # Konfigurace TanStack routeru
+    │   └── styles.css      # Globální CSS, barevná témata a Tailwind CSS v4.0 konfigurace
+    ├── .env                # Lokální environmentální proměnné (tokeny, API klíče)
+    ├── drizzle.config.ts   # Konfigurace generátoru migrací Drizzle Kit
+    ├── package.json        # NPM závislosti, metadata a skripty
+    ├── tsconfig.json       # Konfigurace TypeScriptu
+    ├── tsr.config.json     # Konfigurace pro generátor tras TanStack Router
+    ├── vite.config.ts      # Vite sestavení (pluginy React, Tailwind, Cloudflare, TanStack)
+    └── wrangler.jsonc      # Produkční konfigurace Cloudflare (bindings pro D1, AI, Browser)
 ```
 
 ---
 
 ## 💻 Lokální vývoj (Spuštění projektu)
 
-Pro lokální běh projektu na vašem počítači postupujte podle následujících kroků:
+Před spuštěním jakéhokoliv příkazu přejděte v terminálu do podadresáře **`tanstack`**:
+```bash
+cd tanstack
+```
 
 ### 1. Příprava přihlášení a instalace
 Nejprve se přihlaste ke svému Cloudflare účtu, aby lokální emulátor (Miniflare) mohl komunikovat s GPU zdroji pro AI a Browser Rendering:
@@ -69,7 +74,7 @@ npm install
 ```
 
 ### 2. Vytvoření lokálního `.env`
-Vytvořte soubor `.env` v kořenovém adresáři `/tanstack` a přidejte do něj svůj Cloudflare token pro lokální AI proxy:
+Vytvořte soubor `.env` ve složce `/tanstack` a přidejte do něj svůj Cloudflare token pro lokální AI proxy:
 ```env
 # Token pro lokální testování Cloudflare Workers AI
 CLOUDFLARE_API_TOKEN="vas-cloudflare-user-token"
@@ -95,7 +100,7 @@ Aplikace poběží na adrese [http://localhost:3000](http://localhost:3000).
 
 ## 🌐 Nasazení na Cloudflare (Produkce)
 
-Pro spuštění aplikace na ostré Cloudflare doméně je zapotřebí nastavit databázové a systémové prostředky.
+Ujistěte se, že se v terminálu nacházíte v adresáři `/tanstack`.
 
 ### 1. Vytvoření ostré D1 databáze
 Vytvořte novou databázi přes Wrangler CLI:
