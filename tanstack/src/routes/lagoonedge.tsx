@@ -461,14 +461,13 @@ function LagoonedgeComponent() {
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-bold text-[var(--sea-ink-soft)] uppercase tracking-wider">URL adresa firmy</label>
                 <div className="relative">
-                  <Globe className="absolute left-3.5 top-3.5 h-4 w-4 text-[var(--sea-ink-soft)]" />
                   <input
                     type="text"
                     value={inputUrl}
                     onChange={(e) => setInputUrl(e.target.value)}
                     disabled={isPending}
                     required
-                    className="demo-input p-3 pl-10 text-sm rounded-xl"
+                    className="demo-input p-3 text-sm rounded-xl"
                   />
                 </div>
               </div>

@@ -1,9 +1,25 @@
 /**
- * Cleans the model response by removing any markdown wrappers like ```json and ```
+ * Cleans the model response by extracting only the valid JSON substring.
+ * Extremely robust for smaller models that include conversational preamble/postamble.
  */
 function cleanJsonResponse(text: string): string {
   let cleaned = text.trim();
-  // Remove markdown code blocks if present
+
+  // Find first { and last } for JSON objects
+  const firstBrace = cleaned.indexOf('{');
+  const lastBrace = cleaned.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    return cleaned.substring(firstBrace, lastBrace + 1);
+  }
+
+  // Find first [ and last ] for JSON arrays
+  const firstBracket = cleaned.indexOf('[');
+  const lastBracket = cleaned.lastIndexOf(']');
+  if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+    return cleaned.substring(firstBracket, lastBracket + 1);
+  }
+
+  // Fallback to basic markdown cleanup
   cleaned = cleaned.replace(/^```json\s*/i, '');
   cleaned = cleaned.replace(/^```\s*/i, '');
   cleaned = cleaned.replace(/```$/, '');
@@ -48,22 +64,27 @@ You MUST output ONLY a valid JSON object conforming exactly to this schema:
   "colorPalette": ["List of 2-4 primary brand colors, e.g., hex codes, colors, or 'not found'"]
 }
 
-Rule 1: DO NOT wrap the output in markdown code blocks like \`\`\`json ... \`\`\`. Output ONLY the raw JSON object.
-Rule 2: Do not invent or hallucinate any facts. If you cannot find the answer, use 'not found'.`;
+Rule 1: Respond ONLY with the raw JSON object. Do not wrap in markdown or add explanations.
+Rule 2: Do not invent or hallucinate any facts. If you cannot find the answer, use 'not found'.
+Rule 3: Ensure all JSON keys and string values are wrapped in double quotes.
+Rule 4: NEVER use double quotes inside your string values (e.g. use 'iPhone' instead of "iPhone").
+Rule 5: NEVER write raw newlines inside JSON string values. Keep all text on a single line.`;
 
   const userPrompt = `Website Clean Text Content:
 ${cleanedText}`;
 
+  let rawResponse = '';
   try {
     const stream = await aiBinding.run('@cf/meta/llama-3.2-3b-instruct', {
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
-      stream: false
+      stream: false,
+      max_tokens: 1500
     });
 
-    const rawResponse = stream.response;
+    rawResponse = stream.response || '';
     const jsonText = cleanJsonResponse(rawResponse);
     const parsed = JSON.parse(jsonText);
 
@@ -77,7 +98,7 @@ ${cleanedText}`;
       candidateImages: candidateImages
     };
   } catch (error: any) {
-    console.error('extractBrandProfile failed:', error.message);
+    console.error('extractBrandProfile failed:', error.message, 'Raw response was:', rawResponse);
     // Fallback brand profile in case of model error or JSON parse error
     return {
       companyName: 'not found (AI extraction error)',
@@ -114,8 +135,11 @@ You MUST output ONLY a valid JSON array of objects conforming exactly to this sc
 ]
 
 Generate exactly ${count} diverse, high-performing ads.
-Rule 1: DO NOT wrap the output in markdown code blocks like \`\`\`json ... \`\`\`. Output ONLY the raw JSON array.
-Rule 2: Select the imageUrl ONLY from the provided Candidate Images list. Do not make up any image URLs. If there are no images, output null.`;
+Rule 1: Respond ONLY with the raw JSON array. Do not wrap in markdown or add explanations.
+Rule 2: Select the imageUrl ONLY from the provided Candidate Images list. Do not make up any image URLs. If there are no images, output null.
+Rule 3: Ensure all JSON keys and string values are wrapped in double quotes.
+Rule 4: NEVER use double quotes inside your string values (e.g. use 'iPhone' instead of "iPhone").
+Rule 5: NEVER write raw newlines inside JSON string values. Keep all text on a single line.`;
 
   const userPrompt = `Brand Profile:
 Company Name: ${brandProfile.companyName}
@@ -128,16 +152,18 @@ Colors: ${brandProfile.colorPalette.join(', ')}
 Candidate Images (select ONLY from this list):
 ${candidateImages.length > 0 ? candidateImages.join('\n') : 'No images available'}`;
 
+  let rawResponse = '';
   try {
     const stream = await aiBinding.run('@cf/meta/llama-3.2-3b-instruct', {
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
-      stream: false
+      stream: false,
+      max_tokens: 1800
     });
 
-    const rawResponse = stream.response;
+    rawResponse = stream.response || '';
     const jsonText = cleanJsonResponse(rawResponse);
     const parsed = JSON.parse(jsonText);
 
@@ -153,7 +179,7 @@ ${candidateImages.length > 0 ? candidateImages.join('\n') : 'No images available
     }
     throw new Error('Response is not a JSON array');
   } catch (error: any) {
-    console.error('generateAds failed:', error.message);
+    console.error('generateAds failed:', error.message, 'Raw response was:', rawResponse);
     // Fallback ad in case of failure
     return [{
       creativeIdea: 'Fallback concept',
