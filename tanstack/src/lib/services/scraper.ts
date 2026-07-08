@@ -25,7 +25,7 @@ function cleanHtmlText(html: string): string {
 export async function scrapeWebsite(
   url: string,
   env: { MYBROWSER: any }
-): Promise<{ text: string; candidateImages: string[] }> {
+): Promise<{ text: string; candidateImages: string[]; error?: string }> {
   let browser: any = null;
   const candidateImagesSet = new Set<string>();
 
@@ -111,8 +111,8 @@ export async function scrapeWebsite(
     };
 
   } catch (error: any) {
-    // Graceful degradation fallback to plain fetch
-    console.error(`Puppeteer scrape failed: ${error.message}. Falling back to fetch...`);
+    const puppeteerError = error.message || String(error);
+    console.error(`Puppeteer scrape failed: ${puppeteerError}. Falling back to fetch...`);
     if (browser) {
       try {
         await browser.close();
@@ -129,7 +129,7 @@ export async function scrapeWebsite(
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error ${response.status}`);
+        throw new Error(`HTTP status ${response.status}`);
       }
 
       const html = await response.text();
@@ -171,10 +171,12 @@ export async function scrapeWebsite(
       };
 
     } catch (fallbackError: any) {
-      console.error(`Fallback fetch failed: ${fallbackError.message}`);
+      const fetchError = fallbackError.message || String(fallbackError);
+      console.error(`Fallback fetch failed: ${fetchError}`);
       return {
-        text: 'not found (Scraper and fallback failed)',
-        candidateImages: []
+        text: 'not found',
+        candidateImages: [],
+        error: `Browser Rendering failed: ${puppeteerError}. Fetch fallback failed: ${fetchError}`
       };
     }
   }

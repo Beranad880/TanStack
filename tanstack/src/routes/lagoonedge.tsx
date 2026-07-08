@@ -393,54 +393,19 @@ function LagoonedgeComponent() {
     : []
 
   return (
-    <div className="min-h-screen bg-[var(--bg-base)] text-[var(--sea-ink)] selection:bg-neutral-200 dark:selection:bg-neutral-800 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-[var(--bg-base)] text-[var(--sea-ink)] selection:bg-neutral-200 dark:selection:bg-neutral-800 flex flex-col">
       
-      {/* 1. SIDEBAR: History list of processed sites */}
-      <aside className="w-full md:w-80 border-r border-[var(--line)] bg-[var(--header-bg)] p-6 shrink-0 flex flex-col">
-        <div className="flex items-center justify-between mb-8">
-          <Link to="/" className="flex items-center gap-2 font-extrabold tracking-tight text-base no-underline hover:opacity-85">
-            <Compass className="h-5 w-5" />
-            <span>LagoonEdge</span>
-          </Link>
-          <Link to="/test" className="text-xs font-semibold text-[var(--sea-ink-soft)] no-underline hover:text-[var(--sea-ink)] flex items-center gap-1">
-            <span>Testy</span>
-            <ArrowRight className="h-3 w-3" />
-          </Link>
-        </div>
-
-        <div className="flex-1">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--sea-ink-soft)] mb-4">Skenované weby ({history.length})</h2>
-          
-          {history.length === 0 ? (
-            <p className="text-xs text-[var(--sea-ink-soft)] italic">Žádné předchozí skeny.</p>
-          ) : (
-            <div className="flex flex-col gap-2 overflow-y-auto max-h-[60vh] md:max-h-none">
-              {history.map((histSite) => {
-                const domain = histSite.url.replace(/^https?:\/\/(www\.)?/i, '').split('/')[0]
-                const isActive = siteId === histSite.id
-                return (
-                  <Link
-                    key={histSite.id}
-                    to="/lagoonedge"
-                    search={{ siteId: histSite.id }}
-                    className={`flex flex-col p-3 rounded-xl border text-left no-underline transition-all ${
-                      isActive 
-                        ? 'border-[var(--sea-ink)] bg-[var(--sand)]' 
-                        : 'border-[var(--line)] bg-[var(--surface)] hover:border-neutral-400'
-                    }`}
-                  >
-                    <span className="font-bold text-xs truncate">{domain}</span>
-                    <div className="flex justify-between items-center text-[9px] text-[var(--sea-ink-soft)] mt-1.5">
-                      <span>{new Date(histSite.createdAt).toLocaleDateString()}</span>
-                      <span>{(histSite.latencyMs / 1000).toFixed(1)}s</span>
-                    </div>
-                  </Link>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      </aside>
+      {/* 1. HEADER: Logo and links */}
+      <header className="border-b border-[var(--line)] bg-[var(--header-bg)] px-6 py-4 flex items-center justify-between">
+        <Link to="/" className="flex items-center gap-2 font-extrabold tracking-tight text-base no-underline hover:opacity-85">
+          <Compass className="h-5 w-5" />
+          <span>LagoonEdge</span>
+        </Link>
+        <Link to="/test" className="text-xs font-semibold text-[var(--sea-ink-soft)] no-underline hover:text-[var(--sea-ink)] flex items-center gap-1">
+          <span>Testy</span>
+          <ArrowRight className="h-3 w-3" />
+        </Link>
+      </header>
 
       {/* 2. MAIN CONTAINER AREA */}
       <main className="flex-1 p-6 md:p-12 overflow-y-auto max-w-5xl mx-auto w-full">

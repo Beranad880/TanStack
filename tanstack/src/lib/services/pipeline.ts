@@ -21,7 +21,11 @@ export async function runAdGenerationPipeline(
   const startTime = performance.now();
 
   // Step 1: Scrape website using Puppeteer
-  const { text: cleanText, candidateImages } = await scrapeWebsite(url, env);
+  const { text: cleanText, candidateImages, error: scrapeError } = await scrapeWebsite(url, env);
+
+  if (scrapeError && cleanText === 'not found') {
+    throw new Error(`Nepodařilo se stáhnout obsah zadaného webu. Zkontrolujte URL nebo zda web neblokuje roboty. Podrobnosti: ${scrapeError}`);
+  }
 
   // Step 2: Extract brand profile using Llama 3.2
   const brandProfile = await extractBrandProfile(cleanText, candidateImages, env.AI);
