@@ -9,7 +9,7 @@ import { generateAds } from '../lib/services/ai'
 // @ts-ignore - cloudflare:workers je virtuální modul poskytovaný Vite pluginem
 import { env } from 'cloudflare:workers'
 import { 
-  Compass, ArrowRight, Loader2, Sparkles, 
+  ArrowRight, Loader2, Sparkles, 
   Save, Check, Globe, Eye, RefreshCw, X, Clock, Edit2, Zap, Menu 
 } from 'lucide-react'
 
@@ -490,7 +490,6 @@ function LagoonedgeComponent() {
             <Menu className="h-5 w-5" />
           </button>
           <Link to="/" className="flex items-center gap-2 font-extrabold tracking-tight text-base no-underline hover:opacity-85 text-white drop-shadow-sm">
-            <Compass className="h-5 w-5" />
             <span>LagoonEdge</span>
           </Link>
         </div>
@@ -513,7 +512,7 @@ function LagoonedgeComponent() {
 
         {/* SLIDE-OUT SIDEBAR: History of Campaigns */}
         <aside 
-          className={`fixed top-0 left-0 h-full w-80 bg-[var(--bg-base)] border-r border-[var(--line)] shadow-2xl z-50 p-5 flex flex-col gap-4 transform transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-y-auto ${
+          className={`fixed top-0 left-0 h-full w-96 bg-[var(--bg-base)] border-r border-[var(--line)] shadow-2xl z-50 p-5 flex flex-col gap-4 transform transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-y-auto ${
             isHistoryOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
@@ -526,7 +525,7 @@ function LagoonedgeComponent() {
               {history.length > 0 && (
                 <button
                   onClick={handleDeleteAllSites}
-                  className="text-[10px] font-bold text-red-600 hover:text-red-700 no-underline px-2 py-1 rounded-md border border-red-200 bg-red-50 hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/30 dark:hover:bg-red-900/50"
+                  className="whitespace-nowrap text-[10px] font-bold text-red-600 hover:text-red-700 no-underline px-2 py-1 rounded-md border border-red-200 bg-red-50 hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/30 dark:hover:bg-red-900/50"
                   title="Smazat všechny kampaně"
                 >
                   Smazat vše
@@ -536,7 +535,7 @@ function LagoonedgeComponent() {
                 to="/lagoonedge"
                 search={{ siteId: undefined }}
                 onClick={() => setIsHistoryOpen(false)}
-                className="text-[10px] font-bold text-[var(--sea-ink-soft)] hover:text-[var(--sea-ink)] no-underline px-2 py-1 rounded-md border border-[var(--line)] bg-[var(--surface)] hover:bg-neutral-200"
+                className="whitespace-nowrap text-[10px] font-bold text-[var(--sea-ink-soft)] hover:text-[var(--sea-ink)] no-underline px-2 py-1 rounded-md border border-[var(--line)] bg-[var(--surface)] hover:bg-neutral-200"
               >
                 + Nová
               </Link>
@@ -759,14 +758,12 @@ function LagoonedgeComponent() {
               </div>
 
               {/* Scraped candidate images carousel */}
-              <div className="mt-8 pt-6 border-t border-[var(--line)]">
-                <span className="text-xs uppercase font-extrabold text-[var(--sea-ink)] tracking-widest border-b-2 border-blue-500/30 pb-0.5 mb-4 inline-block">
-                  Nalezené obrázky na webu ({candidateImages.length})
-                </span>
-                
-                {candidateImages.length === 0 ? (
-                  <p className="text-xs text-[var(--sea-ink-soft)] italic">Žádné obrázky nebyly detekovány.</p>
-                ) : (
+              {candidateImages.length > 0 && (
+                <div className="mt-8 pt-6 border-t border-[var(--line)]">
+                  <span className="text-xs uppercase font-extrabold text-[var(--sea-ink)] tracking-widest border-b-2 border-blue-500/30 pb-0.5 mb-4 inline-block">
+                    Nalezené obrázky na webu ({candidateImages.length})
+                  </span>
+                  
                   <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
                     {candidateImages.map((imgUrl, idx) => (
                       <a 
@@ -783,8 +780,8 @@ function LagoonedgeComponent() {
                       </a>
                     ))}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </section>
 
             {/* 2. ADVERTISEMENTS GRID (Visual editable cards) */}
@@ -883,12 +880,12 @@ function LagoonedgeComponent() {
                         </div>
 
                         {/* Image Preview Box */}
-                        {(activeImgUrl || isAdEditing) && (
-                        <div className="relative aspect-video bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center overflow-hidden group">
-                          {activeImgUrl ? (
+                        {((activeImgUrl && activeImgUrl !== 'not found') || isAdEditing) && (
+                        <div className="relative aspect-video bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center overflow-hidden group border-t border-[var(--line)]">
+                          {activeImgUrl && activeImgUrl !== 'not found' ? (
                             <img src={activeImgUrl} alt="Ad creative" className="h-full w-full object-cover" />
                           ) : (
-                            <div className="text-[10px] text-neutral-400 italic">not found (Bez obrázku)</div>
+                            <div className="text-[10px] text-neutral-400 italic">Obrázek chybí (Přidejte kliknutím)</div>
                           )}
                           
                           {/* Image selector dropdown floating when editing */}
@@ -901,10 +898,8 @@ function LagoonedgeComponent() {
                                 className="bg-white text-neutral-900 text-xs font-bold p-2 px-3 rounded-lg shadow-xl border-none outline-none w-[80%] max-w-[200px] cursor-pointer"
                               >
                                 <option value="">Bez obrázku</option>
-                                {candidateImages.map((imgUrl, i) => (
-                                  <option key={i} value={imgUrl}>
-                                    Obrázek #{i + 1}
-                                  </option>
+                                {candidateImages.map((img, i) => (
+                                  <option key={i} value={img}>Obrázek {i + 1}</option>
                                 ))}
                               </select>
                             </div>
