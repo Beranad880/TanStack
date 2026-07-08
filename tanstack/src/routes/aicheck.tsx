@@ -19,7 +19,7 @@ const askGeminiFn = createServerFn({ method: 'POST' })
         }
       }
 
-      const modelName = geminiConfig.model || 'gemini-1.5-flash'
+      const modelName = geminiConfig.model || 'gemini-2.5-flash'
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`
       let response;
       for (let attempt = 1; attempt <= 3; attempt++) {

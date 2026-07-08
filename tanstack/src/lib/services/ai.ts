@@ -77,7 +77,7 @@ async function callGemini(
   schema: any,
   apiKey: string
 ): Promise<any> {
-  const modelName = geminiConfig.model || 'gemini-1.5-flash';
+  const modelName = geminiConfig.model || 'gemini-2.5-flash';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
   
   const body: any = {
