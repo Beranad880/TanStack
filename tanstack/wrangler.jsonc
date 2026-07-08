@@ -29,5 +29,8 @@
   ],
   "ai": {
     "binding": "AI"
+  },
+  "browser": {
+    "binding": "MYBROWSER"
   }
 }

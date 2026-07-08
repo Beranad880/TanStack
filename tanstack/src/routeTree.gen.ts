@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as DbcheckRouteImport } from './routes/dbcheck'
+import { Route as BrowsercheckRouteImport } from './routes/browsercheck'
 import { Route as AicheckRouteImport } from './routes/aicheck'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiAhojRouteImport } from './routes/api/ahoj'
@@ -17,6 +18,11 @@ import { Route as ApiAhojRouteImport } from './routes/api/ahoj'
 const DbcheckRoute = DbcheckRouteImport.update({
   id: '/dbcheck',
   path: '/dbcheck',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BrowsercheckRoute = BrowsercheckRouteImport.update({
+  id: '/browsercheck',
+  path: '/browsercheck',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AicheckRoute = AicheckRouteImport.update({
@@ -38,12 +44,14 @@ const ApiAhojRoute = ApiAhojRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/aicheck': typeof AicheckRoute
+  '/browsercheck': typeof BrowsercheckRoute
   '/dbcheck': typeof DbcheckRoute
   '/api/ahoj': typeof ApiAhojRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/aicheck': typeof AicheckRoute
+  '/browsercheck': typeof BrowsercheckRoute
   '/dbcheck': typeof DbcheckRoute
   '/api/ahoj': typeof ApiAhojRoute
 }
@@ -51,20 +59,22 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/aicheck': typeof AicheckRoute
+  '/browsercheck': typeof BrowsercheckRoute
   '/dbcheck': typeof DbcheckRoute
   '/api/ahoj': typeof ApiAhojRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/aicheck' | '/dbcheck' | '/api/ahoj'
+  fullPaths: '/' | '/aicheck' | '/browsercheck' | '/dbcheck' | '/api/ahoj'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/aicheck' | '/dbcheck' | '/api/ahoj'
-  id: '__root__' | '/' | '/aicheck' | '/dbcheck' | '/api/ahoj'
+  to: '/' | '/aicheck' | '/browsercheck' | '/dbcheck' | '/api/ahoj'
+  id: '__root__' | '/' | '/aicheck' | '/browsercheck' | '/dbcheck' | '/api/ahoj'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AicheckRoute: typeof AicheckRoute
+  BrowsercheckRoute: typeof BrowsercheckRoute
   DbcheckRoute: typeof DbcheckRoute
   ApiAhojRoute: typeof ApiAhojRoute
 }
@@ -76,6 +86,13 @@ declare module '@tanstack/react-router' {
       path: '/dbcheck'
       fullPath: '/dbcheck'
       preLoaderRoute: typeof DbcheckRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/browsercheck': {
+      id: '/browsercheck'
+      path: '/browsercheck'
+      fullPath: '/browsercheck'
+      preLoaderRoute: typeof BrowsercheckRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/aicheck': {
@@ -105,6 +122,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AicheckRoute: AicheckRoute,
+  BrowsercheckRoute: BrowsercheckRoute,
   DbcheckRoute: DbcheckRoute,
   ApiAhojRoute: ApiAhojRoute,
 }

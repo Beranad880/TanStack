@@ -20,6 +20,7 @@
     "db:migrate:prod": "wrangler d1 migrations apply my-binding-database --remote"
   },
   "dependencies": {
+    "@cloudflare/puppeteer": "^1.1.0",
     "@cloudflare/vite-plugin": "^1.26.0",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-devtools": "latest",
@@ -28,9 +29,9 @@
     "@tanstack/react-router-ssr-query": "latest",
     "@tanstack/react-start": "latest",
     "@tanstack/router-plugin": "^1.132.0",
+    "drizzle-orm": "^0.45.2",
     "lucide-react": "^0.545.0",
     "react": "^19.2.0",
-    "drizzle-orm": "^0.45.2",
     "react-dom": "^19.2.0",
     "tailwindcss": "^4.1.18"
   },

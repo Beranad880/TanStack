@@ -19,9 +19,12 @@ tanstack/
 │   ├── components/         # Znovupoužitelné UI komponenty
 │   ├── routes/             # Souborově orientované směrování (file-based routing)
 │   │   ├── api/            # Serverové API trasy (běžící na Cloudflare Workeru)
-│   │   │   └── ahoj.ts     # Ukázková API trasa komunikující s databází D1
+│   │   │   └── ahoj.ts     # Ukázková API trasa (vrací statický JSON)
 │   │   ├── __root.tsx      # Globální rozvržení (layout), HTML struktura, správa tmavého motivu
-│   │   └── index.tsx       # Domovská stránka (/) zobrazující data z databáze
+│   │   ├── index.tsx       # Domovská stránka (/) s odkazy na testovací trasy
+│   │   ├── dbcheck.tsx     # Kontrola připojení a zápisu do D1 databáze
+│   │   ├── aicheck.tsx     # Kontrola spouštění AI modelů (Llama 3.2)
+│   │   └── browsercheck.tsx # Kontrola browser renderingu a focení obrazovky (Puppeteer)
 │   ├── routeTree.gen.ts    # Automaticky generovaný strom tras (vytváří TanStack Router)
 │   ├── router.tsx          # Konfigurace a inicializace instance routeru
 │   └── styles.css          # Globální CSS styly a nastavení barevných témat v Tailwind CSS v4.0
@@ -42,7 +45,23 @@ tanstack/
 Projekt používá SQL databázi **Cloudflare D1** a **Drizzle ORM** pro typově bezpečné dotazování.
 
 *   **Definice schématu**: Tabulky a sloupce se definují v souboru `src/db/schema.ts`.
-*   **Inicializace databáze**: Soubor `src/db/index.ts` automaticky detekuje prostředí. Během vývoje využívá Wrangler platform proxy k simulaci D1 na lokálním SQLite, v produkci se připojuje přímo k bindingu `MY_BINDING`.
+*   **Inicializace databáze**: Soubor `src/db/index.ts` automaticky detekuje prostředí a importuje `env` z virtuálního modulu `cloudflare:workers`. Jak ve vývoji (Miniflare), tak v produkci (Cloudflare Workers) to zajišťuje plně kompatibilní a bezpečný přístup k vazbě `MY_BINDING` bez úniku API klíčů.
+
+---
+
+## 🔗 Testovací trasy (Test Routes)
+
+Aplikace obsahuje 3 speciální testovací trasy pro rychlé ověření funkčnosti všech Cloudflare a databázových služeb:
+
+1.  **`/dbcheck` (Kontrola databáze)**:
+    *   **Účel:** Ověřuje spojení s Cloudflare D1 databází přes Drizzle ORM.
+    *   **Funkčnost:** Při každém načtení zapíše kontrolní záznam do tabulky `todos` a zároveň vytvoří záznam (protokol) v tabulce `protocols` s meta-informacemi (IP adresa, User-Agent, čas). Zobrazuje celkový počet záznamů a posledních 5 auditních protokolů.
+2.  **`/aicheck` (Kontrola AI)**:
+    *   **Účel:** Testuje Cloudflare Workers AI (spouštění LLM modelů bez nutnosti externích klíčů).
+    *   **Funkčnost:** Využívá bezplatný a rychlý model `@cf/meta/llama-3.2-3b-instruct` běžící přímo na infrastruktuře Cloudflaru (v rámci bezplatného limitu 10 000 neuronů denně). Umožňuje odesílat textové dotazy a okamžitě zobrazuje odpovědi z modelu.
+3.  **`/browsercheck` (Kontrola prohlížeče)**:
+    *   **Účel:** Testuje Cloudflare Browser Rendering (spouštění bezhlavého prohlížeče Chrome).
+    *   **Funkčnost:** Využívá knihovnu `@cloudflare/puppeteer`. Po zadání URL adresy nastartuje instanci prohlížeče na serveru Cloudflaru, navštíví daný web, pořídí jeho snímek (screenshot) a vrátí ho do UI jako Base64 obrázek.
 
 ---
 
