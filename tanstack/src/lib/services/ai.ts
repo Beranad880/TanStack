@@ -1,4 +1,25 @@
 import geminiConfig from '../../../gemini-config.json'
+import { z } from 'zod';
+
+const brandProfileZod = z.object({
+  companyName: z.string().optional().default('not found'),
+  description: z.string().optional().default('not found'),
+  targetAudience: z.string().optional().default('not found'),
+  valueProposition: z.string().optional().default('not found'),
+  toneOfVoice: z.string().optional().default('not found'),
+  colorPalette: z.array(z.string()).optional().default(['not found'])
+});
+
+const adZod = z.object({
+  creativeIdea: z.string().optional().default('Ad concept'),
+  primaryText: z.string().optional().default('Experience our services today.'),
+  headline: z.string().optional().default('Welcome'),
+  description: z.string().optional().default('Learn more on our website.'),
+  cta: z.string().optional().default('Learn More'),
+  imageUrl: z.string().nullable().optional().default(null)
+});
+
+const adsArrayZod = z.array(adZod);
 
 export interface BrandProfileInput {
   companyName: string;
@@ -140,13 +161,11 @@ ${cleanedText}`;
   try {
     const parsed = await callGemini(prompt, schema, apiKey);
 
+    // Vynutíme validaci Zodem (automaticky doplní defaulty při případné absenci polí)
+    const validated = brandProfileZod.parse(parsed);
+
     return {
-      companyName: parsed.companyName || 'not found',
-      description: parsed.description || 'not found',
-      targetAudience: parsed.targetAudience || 'not found',
-      valueProposition: parsed.valueProposition || 'not found',
-      toneOfVoice: parsed.toneOfVoice || 'not found',
-      colorPalette: Array.isArray(parsed.colorPalette) ? parsed.colorPalette : ['not found'],
+      ...validated,
       candidateImages: candidateImages
     };
   } catch (error: any) {
@@ -213,17 +232,14 @@ ${candidateImages.length > 0 ? candidateImages.join('\n') : 'No images available
   try {
     const parsed = await callGemini(prompt, schema, apiKey);
 
-    if (Array.isArray(parsed)) {
-      return parsed.map(ad => ({
-        creativeIdea: ad.creativeIdea || 'Ad concept',
-        primaryText: ad.primaryText || 'Experience our services today.',
-        headline: ad.headline || 'Welcome to ' + brandProfile.companyName,
-        description: ad.description || 'Learn more on our website.',
-        cta: ad.cta || 'Learn More',
-        imageUrl: ad.imageUrl || (candidateImages.length > 0 ? candidateImages[0] : null)
-      }));
-    }
-    throw new Error('Response is not a JSON array');
+    // Zod validace pole reklam
+    const validatedAds = adsArrayZod.parse(parsed);
+
+    return validatedAds.map(ad => ({
+      ...ad,
+      // Fallback pro chybějící obrázek
+      imageUrl: ad.imageUrl || (candidateImages.length > 0 ? candidateImages[0] : null)
+    }));
   } catch (error: any) {
     console.error('generateAds failed:', error.message);
     // Fallback ad in case of failure

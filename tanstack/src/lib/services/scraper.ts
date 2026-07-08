@@ -1,4 +1,5 @@
 import puppeteer from '@cloudflare/puppeteer'
+import * as cheerio from 'cheerio'
 
 /**
  * Clean HTML content to leave only readable text by removing styles, scripts, SVGs, etc.
@@ -135,23 +136,25 @@ export async function scrapeWebsite(
       const html = await response.text();
       const cleanedText = cleanHtmlText(html);
 
-      // Simple regex extraction for image links as fallback
+      // Bezpečnější extrakce přes Cheerio (DOM parser) namísto RegEx
+      const $ = cheerio.load(html);
       const fallbackImages: string[] = [];
       
       // Find og:image
-      const ogMatch = html.match(/<meta\s+property="og:image"\s+content="([^"]+)"/i) || 
-                      html.match(/<meta\s+content="([^"]+)"\s+property="og:image"/i);
-      if (ogMatch && ogMatch[1]) {
+      const ogImage = $('meta[property="og:image"], meta[content][property="og:image"]').attr('content');
+      if (ogImage) {
         try {
-          fallbackImages.push(new URL(ogMatch[1], url).href);
+          fallbackImages.push(new URL(ogImage, url).href);
         } catch (_) {}
       }
 
       // Find standard images
-      const imgRegex = /<img[^>]+src="([^">]+)"/gi;
-      let match;
-      while ((match = imgRegex.exec(html)) !== null && fallbackImages.length < 10) {
-        const src = match[1];
+      $('img').each((_, img) => {
+        if (fallbackImages.length >= 10) return false; // stop loop if we have enough
+        
+        const src = $(img).attr('src');
+        if (!src) return;
+        
         const srcLower = src.toLowerCase();
         if (
           !srcLower.includes('logo') && 
@@ -163,7 +166,7 @@ export async function scrapeWebsite(
             fallbackImages.push(new URL(src, url).href);
           } catch (_) {}
         }
-      }
+      });
 
       return {
         text: cleanedText || 'not found',

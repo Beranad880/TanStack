@@ -108,8 +108,8 @@ const generateLagoonedgeAdsFn = createServerFn({ method: 'POST' })
         targetAudience: pipelineResult.brandProfile.targetAudience,
         valueProposition: pipelineResult.brandProfile.valueProposition,
         toneOfVoice: pipelineResult.brandProfile.toneOfVoice,
-        colorPalette: JSON.stringify(pipelineResult.brandProfile.colorPalette),
-        candidateImages: JSON.stringify(pipelineResult.brandProfile.candidateImages),
+        colorPalette: pipelineResult.brandProfile.colorPalette,
+        candidateImages: pipelineResult.brandProfile.candidateImages,
         createdAt: new Date().toISOString()
       })
 
@@ -188,7 +188,7 @@ const regenerateAdFn = createServerFn({ method: 'POST' })
       }
 
       const profile = profileList[0]
-      const candidateImages: string[] = JSON.parse(profile.candidateImages)
+      const candidateImages: string[] = profile.candidateImages
 
       // Call Gemini to generate exactly 1 ad
       const generatedAds = await generateAds(
@@ -198,7 +198,7 @@ const regenerateAdFn = createServerFn({ method: 'POST' })
           targetAudience: profile.targetAudience,
           valueProposition: profile.valueProposition,
           toneOfVoice: profile.toneOfVoice,
-          colorPalette: JSON.parse(profile.colorPalette)
+          colorPalette: profile.colorPalette
         },
         candidateImages,
         env,
@@ -239,13 +239,7 @@ const deleteLagoonedgeSiteFn = createServerFn({ method: 'POST' })
     try {
       const db = await getDb()
       
-      // Delete associated ads
-      await db.delete(ads).where(eq(ads.siteId, siteId))
-      
-      // Delete associated brand profile
-      await db.delete(brandProfiles).where(eq(brandProfiles.siteId, siteId))
-      
-      // Delete the site
+      // Delete the site (cascades automatically to ads and brand profile)
       await db.delete(sites).where(eq(sites.id, siteId))
 
       return { success: true }
@@ -432,11 +426,11 @@ function LagoonedgeComponent() {
 
   // Parse strings lists (Colors and Candidate Images) safely
   const colors: string[] = selected
-    ? JSON.parse(selected.brandProfile.colorPalette)
+    ? selected.brandProfile.colorPalette
     : []
   
   const candidateImages: string[] = selected
-    ? JSON.parse(selected.brandProfile.candidateImages)
+    ? selected.brandProfile.candidateImages
     : []
 
   return (
@@ -530,8 +524,11 @@ function LagoonedgeComponent() {
         {/* A. SCENE 1: URL input page (If no site is currently selected/viewed) */}
         {!selected ? (
           <div className="min-h-[70vh] flex flex-col justify-center max-w-lg mx-auto py-12">
-            <div className="text-center mb-10">
-              <h1 className="display-title text-4xl font-extrabold tracking-tight text-[var(--sea-ink)] mb-4">
+            <div className="text-center mb-12">
+              <div className="text-6xl md:text-7xl font-black text-[var(--sea-ink)] tracking-tighter mb-3">
+                LagoonEdge
+              </div>
+              <h1 className="display-title text-xl md:text-2xl font-bold tracking-tight text-[var(--sea-ink-soft)] mb-6">
                 Brand & Ad Generator
               </h1>
               <p className="text-sm text-[var(--sea-ink-soft)] leading-relaxed">

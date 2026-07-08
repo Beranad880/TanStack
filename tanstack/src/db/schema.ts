@@ -26,20 +26,20 @@ export const sites = sqliteTable('sites', {
 
 export const brandProfiles = sqliteTable('brand_profiles', {
   id: text('id').primaryKey(),
-  siteId: text('site_id').notNull().references(() => sites.id),
+  siteId: text('site_id').notNull().references(() => sites.id, { onDelete: 'cascade' }),
   companyName: text('company_name').notNull(),
   description: text('description').notNull(),
   targetAudience: text('target_audience').notNull(),
   valueProposition: text('value_proposition').notNull(),
   toneOfVoice: text('tone_of_voice').notNull(),
-  colorPalette: text('color_palette').notNull(), // string[] JSON string
-  candidateImages: text('candidate_images').notNull(), // string[] JSON string
+  colorPalette: text('color_palette', { mode: 'json' }).$type<string[]>().notNull(),
+  candidateImages: text('candidate_images', { mode: 'json' }).$type<string[]>().notNull(),
   createdAt: text('created_at').notNull(),
 });
 
 export const ads = sqliteTable('ads', {
   id: text('id').primaryKey(),
-  siteId: text('site_id').notNull().references(() => sites.id),
+  siteId: text('site_id').notNull().references(() => sites.id, { onDelete: 'cascade' }),
   creativeIdea: text('creative_idea').notNull(),
   primaryText: text('primary_text').notNull(),
   headline: text('headline').notNull(),
