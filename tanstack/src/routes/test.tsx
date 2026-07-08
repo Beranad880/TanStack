@@ -63,7 +63,7 @@ function TestHubComponent() {
               </div>
               <div>
                 <span className="font-bold text-sm block">AI Modely (Gemini)</span>
-                <span className="text-[10px] text-[var(--sea-ink-soft)]">Volání Google Gemini 1.5 Flash</span>
+                <span className="text-[10px] text-[var(--sea-ink-soft)]">Volání Google Gemini 3.5 Flash</span>
               </div>
             </div>
             <span className="text-xs font-bold text-[var(--sea-ink-soft)] bg-[var(--sand)] px-2.5 py-1 rounded-full">/aicheck</span>

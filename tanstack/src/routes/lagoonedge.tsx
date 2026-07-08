@@ -253,6 +253,26 @@ const deleteLagoonedgeSiteFn = createServerFn({ method: 'POST' })
     }
   })
 
+// 6. Delete ALL sites and their ads / brand profiles
+const deleteAllLagoonedgeSitesFn = createServerFn({ method: 'POST' })
+  .handler(async () => {
+    try {
+      const db = await getDb()
+      
+      // Delete children first
+      await db.delete(ads)
+      await db.delete(brandProfiles)
+      
+      // Finally delete all sites
+      await db.delete(sites)
+
+      return { success: true }
+    } catch (error: any) {
+      console.error('deleteAllLagoonedgeSitesFn failed:', error.message)
+      throw new Error(`Smazání všeho selhalo: ${error.message}`)
+    }
+  })
+
 // --- ROUTE DEFINITION ---
 
 interface LagoonEdgeSearch {
@@ -317,6 +337,24 @@ function LagoonedgeComponent() {
       }
     } catch (err: any) {
       alert(`Chyba při mazání: ${err.message}`)
+    }
+  }
+
+  // Handle deleting ALL campaigns
+  const handleDeleteAllSites = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!confirm('VAROVÁNÍ: Opravdu chcete smazat VŠECHNY uložené kampaně? Tuto akci nelze vrátit.')) return
+
+    try {
+      await deleteAllLagoonedgeSitesFn()
+      
+      router.navigate({
+        to: '/lagoonedge',
+        search: { siteId: undefined }
+      })
+    } catch (err: any) {
+      alert(`Chyba při mazání všeho: ${err.message}`)
     }
   }
 
@@ -485,6 +523,15 @@ function LagoonedgeComponent() {
               <span>Historie kampaní</span>
             </h2>
             <div className="flex items-center gap-2">
+              {history.length > 0 && (
+                <button
+                  onClick={handleDeleteAllSites}
+                  className="text-[10px] font-bold text-red-600 hover:text-red-700 no-underline px-2 py-1 rounded-md border border-red-200 bg-red-50 hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/30 dark:hover:bg-red-900/50"
+                  title="Smazat všechny kampaně"
+                >
+                  Smazat vše
+                </button>
+              )}
               <Link
                 to="/lagoonedge"
                 search={{ siteId: undefined }}
@@ -568,7 +615,7 @@ function LagoonedgeComponent() {
                 Brand & Ad Generator
               </h1>
               <p className="text-sm text-[var(--sea-ink-soft)] leading-relaxed">
-                Zadejte libovolné URL firmy. Puppeteer web zanalyzuje a Google Gemini extrahuje tón značky a vygeneruje 3 hotové reklamy.
+                Zadejte libovolné URL firmy. Aplikace marketingově zanalyzuje stránku, extrahuje tón značky a vygeneruje hotové reklamy.
               </p>
             </div>
 
@@ -836,6 +883,7 @@ function LagoonedgeComponent() {
                         </div>
 
                         {/* Image Preview Box */}
+                        {(activeImgUrl || isAdEditing) && (
                         <div className="relative aspect-video bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center overflow-hidden group">
                           {activeImgUrl ? (
                             <img src={activeImgUrl} alt="Ad creative" className="h-full w-full object-cover" />
@@ -862,6 +910,7 @@ function LagoonedgeComponent() {
                             </div>
                           )}
                         </div>
+                        )}
 
                         {/* Bottom Headline & Call To Action block */}
                         <div className="bg-neutral-50 dark:bg-[#242526] p-3 flex justify-between items-center gap-3 border-t border-[var(--line)]">

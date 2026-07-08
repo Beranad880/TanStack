@@ -70,14 +70,14 @@ function cleanJsonResponse(text: string): string {
 }
 
 /**
- * Helper to call Google Gemini 1.5 Flash API with JSON Schema
+ * Helper to call Google Gemini 3.5 Flash API with JSON Schema
  */
 async function callGemini(
   prompt: string,
   schema: any,
   apiKey: string
 ): Promise<any> {
-  const modelName = geminiConfig.model || 'gemini-1.5-flash';
+  const modelName = geminiConfig.model || 'gemini-3.5-flash';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
   
   const body: any = {
@@ -157,6 +157,7 @@ export async function extractBrandProfile(
 
   const prompt = `You are an expert brand analyst. You analyze clean text content of a website and extract a structured brand profile.
 Do not invent or hallucinate any facts. If you cannot find the answer, use 'not found'.
+Respond entirely in Czech (čeština).
 
 Website Clean Text Content:
 ${cleanedText}`;
@@ -218,11 +219,12 @@ export async function generateAds(
   }
 
   const prompt = `You are a senior copywriter and creative director. Based on the provided brand profile and candidate images, you generate advertisements.
-Generate exactly ${count} diverse, high-performing ads.
+Evaluate the quality and depth of the provided brand profile. Based on how detailed and rich the information is, generate between 1 and ${count} diverse, high-performing ads. If the profile is very basic or lacks detail, generate only 1 or 2 ads. If it is rich, generate up to ${count} ads.
+All generated content MUST be in Czech language (čeština).
 
 CRITICAL RULES FOR DIVERSITY:
-1. Every single ad MUST have a COMPLETELY UNIQUE primary text, headline, and description. DO NOT repeat the same phrases or sentences across the ${count} ads.
-2. Every single ad MUST use a DIFFERENT imageUrl. You must select ${count} different images from the Candidate Images list. DO NOT use the same imageUrl twice.
+1. Every single ad MUST have a COMPLETELY UNIQUE primary text, headline, and description. DO NOT repeat the same phrases or sentences. All text must be in Czech.
+2. Every single ad MUST use a DIFFERENT imageUrl. You must select different images from the Candidate Images list. DO NOT use the same imageUrl twice.
 3. If there are not enough images, you can use null, but try your best to use unique images.
 
 Brand Profile:
@@ -238,7 +240,7 @@ ${candidateImages.length > 0 ? candidateImages.join('\n') : 'No images available
 
   const schema = {
     type: "ARRAY",
-    description: `Array of exactly ${count} generated ad variations`,
+    description: `Array of 1 to ${count} generated ad variations based on the quality of the brand profile`,
     items: {
       type: "OBJECT",
       properties: {
