@@ -6,3 +6,12 @@ export const todos = sqliteTable('todos', {
   completed: integer('completed', { mode: 'boolean' }).notNull().default(false),
   createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
 });
+
+export const protocols = sqliteTable('protocols', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  timestamp: text('timestamp').$defaultFn(() => new Date().toISOString()),
+  status: text('status').notNull(), // 'success' | 'failed'
+  ip: text('ip'),
+  userAgent: text('user_agent'),
+  details: text('details').notNull(),
+});
