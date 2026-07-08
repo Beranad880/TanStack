@@ -99,17 +99,32 @@ async function callGemini(
     };
   }
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(body)
-  });
+  let response;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
 
-  if (!response.ok) {
+    if (response.ok) {
+      break;
+    }
+
     const errorText = await response.text();
+    if ((response.status === 503 || response.status === 429) && attempt < 3) {
+      console.warn(`Gemini API ${response.status}, retrying in ${attempt * 2}s...`);
+      await new Promise(r => setTimeout(r, attempt * 2000));
+      continue;
+    }
+    
     throw new Error(`Gemini API error (HTTP ${response.status}): ${errorText}`);
+  }
+
+  if (!response) {
+    throw new Error('Gemini API fetch failed');
   }
 
   const result = await response.json();

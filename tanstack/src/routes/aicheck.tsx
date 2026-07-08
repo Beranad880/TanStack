@@ -21,27 +21,42 @@ const askGeminiFn = createServerFn({ method: 'POST' })
 
       const modelName = geminiConfig.model || 'gemini-2.5-flash'
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: data.prompt }]
-            }
-          ]
+      let response;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: 'user',
+                parts: [{ text: data.prompt }]
+              }
+            ]
+          })
         })
-      })
 
-      if (!response.ok) {
+        if (response.ok) {
+          break;
+        }
+
         const errorText = await response.text()
+        if ((response.status === 503 || response.status === 429) && attempt < 3) {
+          console.warn(`Gemini API ${response.status}, retrying in ${attempt * 2}s...`);
+          await new Promise(r => setTimeout(r, attempt * 2000));
+          continue;
+        }
+
         return {
           success: false,
           error: `Gemini API error (HTTP ${response.status}): ${errorText}`
         }
+      }
+
+      if (!response) {
+        return { success: false, error: 'Gemini API fetch failed' }
       }
 
       const result = await response.json()
