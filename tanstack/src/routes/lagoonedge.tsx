@@ -10,7 +10,7 @@ import { generateAds } from '../lib/services/ai'
 import { env } from 'cloudflare:workers'
 import { 
   Compass, ArrowRight, Loader2, Sparkles, 
-  Save, Check, Globe, Eye, RefreshCw, X, Clock 
+  Save, Check, Globe, Eye, RefreshCw, X, Clock, Edit2, Zap, Menu 
 } from 'lucide-react'
 
 // --- SERVER FUNCTIONS ---
@@ -281,6 +281,7 @@ function LagoonedgeComponent() {
   const [isPending, startTransition] = useTransition()
   const [loadingStep, setLoadingStep] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
 
   // State to track ad card edits locally before saving
   const [editingAdId, setEditingAdId] = useState<string | null>(null)
@@ -441,34 +442,64 @@ function LagoonedgeComponent() {
     <div className="min-h-screen bg-[var(--bg-base)] text-[var(--sea-ink)] selection:bg-neutral-200 dark:selection:bg-neutral-800 flex flex-col">
       
       {/* 1. HEADER: Logo and links */}
-      <header className="border-b border-[var(--line)] bg-[var(--header-bg)] px-6 py-4 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 font-extrabold tracking-tight text-base no-underline hover:opacity-85">
-          <Compass className="h-5 w-5" />
-          <span>LagoonEdge</span>
-        </Link>
+      <header className="border-b border-[var(--line)] bg-[var(--header-bg)] px-6 py-4 flex items-center justify-between sticky top-0 z-30">
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => setIsHistoryOpen(true)}
+            className="p-1.5 -ml-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
+            title="Historie kampaní"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <Link to="/" className="flex items-center gap-2 font-extrabold tracking-tight text-base no-underline hover:opacity-85 text-white drop-shadow-sm">
+            <Compass className="h-5 w-5" />
+            <span>LagoonEdge</span>
+          </Link>
+        </div>
         <Link to="/test" className="text-xs font-semibold text-[var(--sea-ink-soft)] no-underline hover:text-[var(--sea-ink)] flex items-center gap-1">
           <span>Testy</span>
           <ArrowRight className="h-3 w-3" />
         </Link>
       </header>
 
-      {/* 2. MAIN WORKSPACE WITH SIDEBAR */}
-      <div className="flex-1 flex flex-col md:flex-row w-full min-h-0">
+      {/* 2. MAIN WORKSPACE */}
+      <div className="flex-1 flex flex-col w-full min-h-0 relative">
         
-        {/* SIDEBAR: History of Campaigns */}
-        <aside className="w-full md:w-80 border-b md:border-b-0 md:border-r border-[var(--line)] bg-[var(--surface)]/20 backdrop-blur-xs p-5 flex flex-col gap-4 shrink-0 md:overflow-y-auto md:max-h-[calc(100vh-73px)]">
-          <div className="flex items-center justify-between pb-3 border-b border-[var(--line)]">
+        {/* SIDEBAR OVERLAY */}
+        {isHistoryOpen && (
+          <div 
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity"
+            onClick={() => setIsHistoryOpen(false)}
+          />
+        )}
+
+        {/* SLIDE-OUT SIDEBAR: History of Campaigns */}
+        <aside 
+          className={`fixed top-0 left-0 h-full w-80 bg-[var(--bg-base)] border-r border-[var(--line)] shadow-2xl z-50 p-5 flex flex-col gap-4 transform transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-y-auto ${
+            isHistoryOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
+          <div className="flex items-center justify-between pb-3 border-b border-[var(--line)] mt-1">
             <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--sea-ink)] flex items-center gap-1.5">
               <Clock className="h-3.5 w-3.5 text-[var(--sea-ink-soft)]" />
               <span>Historie kampaní</span>
             </h2>
-            <Link
-              to="/lagoonedge"
-              search={{ siteId: undefined }}
-              className="text-[10px] font-bold text-[var(--sea-ink-soft)] hover:text-[var(--sea-ink)] no-underline px-2 py-1 rounded-md border border-[var(--line)] bg-[var(--surface)] hover:bg-neutral-200"
-            >
-              + Nová
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                to="/lagoonedge"
+                search={{ siteId: undefined }}
+                onClick={() => setIsHistoryOpen(false)}
+                className="text-[10px] font-bold text-[var(--sea-ink-soft)] hover:text-[var(--sea-ink)] no-underline px-2 py-1 rounded-md border border-[var(--line)] bg-[var(--surface)] hover:bg-neutral-200"
+              >
+                + Nová
+              </Link>
+              <button 
+                onClick={() => setIsHistoryOpen(false)}
+                className="p-1 rounded-md text-neutral-400 hover:text-[var(--sea-ink)] hover:bg-neutral-200/50 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
 
           <div className="flex flex-col gap-2">
@@ -492,6 +523,7 @@ function LagoonedgeComponent() {
                     key={item.id}
                     to="/lagoonedge"
                     search={{ siteId: item.id }}
+                    onClick={() => setIsHistoryOpen(false)}
                     className={`flex items-center justify-between gap-3 p-3 rounded-xl border text-xs no-underline transition-all group ${
                       isActive
                         ? 'border-[var(--sea-ink)] bg-[var(--sand)] font-bold text-[var(--sea-ink)] shadow-sm'
@@ -529,7 +561,7 @@ function LagoonedgeComponent() {
         {!selected ? (
           <div className="min-h-[70vh] flex flex-col justify-center max-w-lg mx-auto py-12">
             <div className="text-center mb-12">
-              <div className="text-6xl md:text-7xl font-black text-[var(--sea-ink)] tracking-tighter mb-3">
+              <div className="text-6xl md:text-7xl font-black tracking-tighter mb-3 text-white drop-shadow-[0_2px_15px_rgba(255,255,255,0.4)] pb-1">
                 LagoonEdge
               </div>
               <h1 className="display-title text-xl md:text-2xl font-bold tracking-tight text-[var(--sea-ink-soft)] mb-6">
@@ -628,34 +660,34 @@ function LagoonedgeComponent() {
               </h2>
 
               <div className="grid gap-6 sm:grid-cols-2">
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-5">
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-[var(--sea-ink-soft)] tracking-wider">Název firmy</span>
-                    <p className="font-bold text-sm text-[var(--sea-ink)] mt-1">{selected.brandProfile.companyName}</p>
+                    <span className="text-xs uppercase font-extrabold text-[var(--sea-ink)] tracking-widest border-b-2 border-blue-500/30 pb-0.5 mb-1.5 inline-block">Název firmy</span>
+                    <p className="font-bold text-sm text-[var(--sea-ink)]">{selected.brandProfile.companyName}</p>
                   </div>
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-[var(--sea-ink-soft)] tracking-wider">Stručný popis</span>
-                    <p className="text-xs text-[var(--sea-ink-soft)] mt-1 leading-relaxed">{selected.brandProfile.description}</p>
+                    <span className="text-xs uppercase font-extrabold text-[var(--sea-ink)] tracking-widest border-b-2 border-blue-500/30 pb-0.5 mb-1.5 inline-block">Stručný popis</span>
+                    <p className="text-sm text-[var(--sea-ink-soft)] leading-relaxed">{selected.brandProfile.description}</p>
                   </div>
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-[var(--sea-ink-soft)] tracking-wider">Cílové publikum</span>
-                    <p className="text-xs text-[var(--sea-ink-soft)] mt-1 leading-relaxed">{selected.brandProfile.targetAudience}</p>
+                    <span className="text-xs uppercase font-extrabold text-[var(--sea-ink)] tracking-widest border-b-2 border-blue-500/30 pb-0.5 mb-1.5 inline-block">Cílové publikum</span>
+                    <p className="text-sm text-[var(--sea-ink-soft)] leading-relaxed">{selected.brandProfile.targetAudience}</p>
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-5">
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-[var(--sea-ink-soft)] tracking-wider">Hlavní hodnota (Value Prop)</span>
-                    <p className="text-xs text-[var(--sea-ink-soft)] mt-1 leading-relaxed">{selected.brandProfile.valueProposition}</p>
+                    <span className="text-xs uppercase font-extrabold text-[var(--sea-ink)] tracking-widest border-b-2 border-blue-500/30 pb-0.5 mb-1.5 inline-block">Hlavní hodnota (Value Prop)</span>
+                    <p className="text-sm text-[var(--sea-ink-soft)] leading-relaxed">{selected.brandProfile.valueProposition}</p>
                   </div>
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-[var(--sea-ink-soft)] tracking-wider">Tón komunikace</span>
-                    <p className="text-xs text-[var(--sea-ink-soft)] mt-1 leading-relaxed capitalize">{selected.brandProfile.toneOfVoice}</p>
+                    <span className="text-xs uppercase font-extrabold text-[var(--sea-ink)] tracking-widest border-b-2 border-blue-500/30 pb-0.5 mb-1.5 inline-block">Tón komunikace</span>
+                    <p className="text-sm text-[var(--sea-ink-soft)] leading-relaxed capitalize">{selected.brandProfile.toneOfVoice}</p>
                   </div>
                   
                   {/* Colors color palette */}
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-[var(--sea-ink-soft)] tracking-wider block mb-2">Barevná paleta</span>
+                    <span className="text-xs uppercase font-extrabold text-[var(--sea-ink)] tracking-widest border-b-2 border-blue-500/30 pb-0.5 mb-2.5 inline-block">Barevná paleta</span>
                     <div className="flex items-center gap-2">
                       {colors.length === 0 || colors[0] === 'not found' ? (
                         <span className="text-xs text-[var(--sea-ink-soft)] italic">not found</span>
@@ -664,12 +696,12 @@ function LagoonedgeComponent() {
                           const cleanColor = color.trim()
                           const isValidColor = /^#([0-9A-F]{3}){1,2}$/i.test(cleanColor) || /^[a-zA-Z]+$/.test(cleanColor)
                           return (
-                            <div key={idx} className="flex items-center gap-1 border border-[var(--line)] bg-[var(--surface)] p-1 pr-2.5 rounded-full">
+                            <div key={idx} className="flex items-center gap-1.5 border border-[var(--line)] bg-[var(--surface)] px-2 py-1 rounded-lg shadow-sm">
                               <span 
                                 className="h-4 w-4 rounded-full border border-neutral-300 shrink-0" 
                                 style={{ backgroundColor: isValidColor ? cleanColor : '#ccc' }}
                               />
-                              <span className="text-[9px] font-mono">{cleanColor}</span>
+                              <span className="text-[10px] font-bold font-mono">{cleanColor}</span>
                             </div>
                           )
                         })
@@ -681,7 +713,7 @@ function LagoonedgeComponent() {
 
               {/* Scraped candidate images carousel */}
               <div className="mt-8 pt-6 border-t border-[var(--line)]">
-                <span className="text-[10px] uppercase font-bold text-[var(--sea-ink-soft)] tracking-wider block mb-3">
+                <span className="text-xs uppercase font-extrabold text-[var(--sea-ink)] tracking-widest border-b-2 border-blue-500/30 pb-0.5 mb-4 inline-block">
                   Nalezené obrázky na webu ({candidateImages.length})
                 </span>
                 
@@ -711,13 +743,15 @@ function LagoonedgeComponent() {
             {/* 2. ADVERTISEMENTS GRID (Visual editable cards) */}
             <section className="flex flex-col gap-6">
               <div>
-                <h2 className="text-xl font-extrabold text-[var(--sea-ink)]">Návrhy reklamních kreativ</h2>
-                <p className="text-xs text-[var(--sea-ink-soft)] mt-1">
-                  Tyto reklamy můžete přímo upravovat, měnit u nich obrázek, uložit změny, nebo každou reklamu nezávisle regenerovat.
+                <h2 className="text-2xl font-extrabold text-[var(--sea-ink)]">
+                  Návrhy reklamních kreativ pro {selected.brandProfile.companyName !== 'not found' ? selected.brandProfile.companyName : selected.site.url.replace(/^https?:\/\/(www\.)?/i, '')}
+                </h2>
+                <p className="text-sm text-[var(--sea-ink-soft)] mt-1">
+                  Tyto reklamy na produktové a domovské stránky <strong>{selected.site.url.replace(/^https?:\/\/(www\.)?/i, '')}</strong> můžete přímo upravovat, měnit u nich obrázek, uložit změny, nebo každou nezávisle regenerovat.
                 </p>
               </div>
 
-              <div className="grid gap-8 lg:grid-cols-3">
+              <div className="grid gap-12 lg:grid-cols-2">
                 {selected.ads.map((ad, idx) => {
                   const isAdEditing = editingAdId === ad.id
                   const isAdSaving = savingAdId === ad.id
@@ -767,106 +801,109 @@ function LagoonedgeComponent() {
                       </div>
 
                       {/* Mockup Ad Preview Graphic */}
-                      <div className="border border-[var(--line)] rounded-xl overflow-hidden bg-white dark:bg-black p-3 mb-4 text-left shadow-sm">
+                      <div className="border border-[var(--line)] rounded-2xl overflow-hidden bg-white dark:bg-[#18191A] mb-4 text-left shadow-sm flex flex-col">
                         
-                        {/* Domain text */}
-                        <div className="text-[9px] text-neutral-400 font-mono tracking-tight mb-2 truncate">
-                          Sponsored • {selected.site.url.replace(/^https?:\/\/(www\.)?/i, '')}
+                        {/* Header: Avatar + Domain text */}
+                        <div className="flex items-center gap-2 p-3 pb-2">
+                          <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center shrink-0 shadow-sm text-white font-bold text-xs">
+                            {selected.site.url.replace(/^https?:\/\/(www\.)?/i, '').charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100 hover:underline cursor-pointer">
+                              {selected.brandProfile.companyName !== 'not found' ? selected.brandProfile.companyName : selected.site.url.replace(/^https?:\/\/(www\.)?/i, '')}
+                            </span>
+                            <span className="text-[10px] text-neutral-500 font-medium">Sponzorováno • {selected.site.url.replace(/^https?:\/\/(www\.)?/i, '')}</span>
+                          </div>
                         </div>
 
                         {/* Primary text */}
+                        <div className="px-3 pb-3">
                         {isAdEditing ? (
-                          <div className="flex flex-col gap-1.5 mb-2.5">
-                            <span className="text-[9px] font-bold uppercase text-[var(--sea-ink-soft)]">Hlavní text reklamy</span>
-                            <textarea
-                              value={editFields?.primaryText || ''}
-                              onChange={(e) => handleFieldChange('primaryText', e.target.value)}
-                              className="demo-textarea text-xs p-2 min-h-[4rem] rounded-lg"
-                            />
-                          </div>
+                          <textarea
+                            value={editFields?.primaryText || ''}
+                            onChange={(e) => handleFieldChange('primaryText', e.target.value)}
+                            className="w-full text-[13px] text-neutral-800 dark:text-neutral-200 leading-snug bg-blue-50/40 dark:bg-blue-900/10 focus:bg-white dark:focus:bg-[#18191A] border border-blue-300 dark:border-blue-700 focus:border-[var(--sea-ink)] rounded-lg p-2.5 resize-none transition-all outline-none shadow-inner"
+                            rows={3}
+                            placeholder="Hlavní text reklamy..."
+                          />
                         ) : (
-                          <p className="text-xs text-neutral-800 dark:text-neutral-200 leading-normal mb-2.5 font-medium line-clamp-3">
+                          <p className="text-[13px] text-neutral-800 dark:text-neutral-200 leading-snug">
                             {ad.primaryText}
                           </p>
                         )}
+                        </div>
 
                         {/* Image Preview Box */}
-                        <div className="relative aspect-video bg-neutral-100 dark:bg-neutral-900 border-y border-[var(--line)] flex items-center justify-center overflow-hidden mb-2 rounded-lg">
+                        <div className="relative aspect-video bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center overflow-hidden group">
                           {activeImgUrl ? (
                             <img src={activeImgUrl} alt="Ad creative" className="h-full w-full object-cover" />
                           ) : (
                             <div className="text-[10px] text-neutral-400 italic">not found (Bez obrázku)</div>
                           )}
+                          
+                          {/* Image selector dropdown floating when editing */}
+                          {isAdEditing && candidateImages.length > 0 && (
+                            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                              <span className="text-white text-[10px] font-bold uppercase tracking-wider mb-2">Změnit obrázek</span>
+                              <select
+                                value={editFields?.imageUrl || ''}
+                                onChange={(e) => handleFieldChange('imageUrl', e.target.value || null)}
+                                className="bg-white text-neutral-900 text-xs font-bold p-2 px-3 rounded-lg shadow-xl border-none outline-none w-[80%] max-w-[200px] cursor-pointer"
+                              >
+                                <option value="">Bez obrázku</option>
+                                {candidateImages.map((imgUrl, i) => (
+                                  <option key={i} value={imgUrl}>
+                                    Obrázek #{i + 1}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
                         </div>
 
-                        {/* Candidate image selector dropdown (only visible when editing) */}
-                        {isAdEditing && candidateImages.length > 0 && (
-                          <div className="flex flex-col gap-1.5 mb-3 pt-1">
-                            <span className="text-[9px] font-bold uppercase text-[var(--sea-ink-soft)]">Vybrat obrázek z webu</span>
-                            <select
-                              value={editFields?.imageUrl || ''}
-                              onChange={(e) => handleFieldChange('imageUrl', e.target.value || null)}
-                              className="demo-select text-xs p-1.5 rounded-lg"
-                            >
-                              <option value="">Bez obrázku</option>
-                              {candidateImages.map((imgUrl, i) => (
-                                <option key={i} value={imgUrl}>
-                                  Obrázek #{i + 1} ({imgUrl.split('/').pop()?.slice(-20) || 'odkaz'})
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        )}
-
                         {/* Bottom Headline & Call To Action block */}
-                        <div className="flex justify-between items-end gap-3 mt-1.5">
-                          <div className="flex-1 min-w-0">
+                        <div className="bg-neutral-50 dark:bg-[#242526] p-3 flex justify-between items-center gap-3 border-t border-[var(--line)]">
+                          <div className="flex-1 min-w-0 flex flex-col justify-center">
                             {isAdEditing ? (
-                              <div className="flex flex-col gap-1.5 mb-2">
-                                <span className="text-[9px] font-bold uppercase text-[var(--sea-ink-soft)]">Titulek</span>
+                              <div className="flex flex-col gap-1.5">
                                 <input
                                   type="text"
                                   value={editFields?.headline || ''}
                                   onChange={(e) => handleFieldChange('headline', e.target.value)}
-                                  className="demo-input text-xs p-2 rounded-lg"
+                                  className="font-bold text-[13px] text-neutral-900 dark:text-neutral-100 leading-tight bg-blue-50/40 dark:bg-blue-900/10 focus:bg-white dark:focus:bg-[#18191A] border border-blue-300 dark:border-blue-700 focus:border-[var(--sea-ink)] rounded-md px-2 py-1 outline-none w-full shadow-inner transition-colors"
+                                  placeholder="Titulek"
                                 />
-                              </div>
-                            ) : (
-                              <h4 className="font-bold text-xs text-neutral-900 dark:text-neutral-100 leading-tight truncate">
-                                {ad.headline}
-                              </h4>
-                            )}
-
-                            {isAdEditing ? (
-                              <div className="flex flex-col gap-1.5">
-                                <span className="text-[9px] font-bold uppercase text-[var(--sea-ink-soft)]">Popis (Tagline)</span>
                                 <input
                                   type="text"
                                   value={editFields?.description || ''}
                                   onChange={(e) => handleFieldChange('description', e.target.value)}
-                                  className="demo-input text-xs p-2 rounded-lg"
+                                  className="text-[11px] text-neutral-600 dark:text-neutral-400 bg-blue-50/40 dark:bg-blue-900/10 focus:bg-white dark:focus:bg-[#18191A] border border-blue-300 dark:border-blue-700 focus:border-[var(--sea-ink)] rounded-md px-2 py-1 outline-none w-full shadow-inner transition-colors"
+                                  placeholder="Popis (Tagline)"
                                 />
                               </div>
                             ) : (
-                              <p className="text-[10px] text-neutral-400 truncate mt-0.5">
-                                {ad.description}
-                              </p>
+                              <>
+                                <h4 className="font-bold text-[13px] text-neutral-900 dark:text-neutral-100 leading-tight truncate">
+                                  {ad.headline}
+                                </h4>
+                                <p className="text-[11px] text-neutral-500 truncate mt-0.5">
+                                  {ad.description}
+                                </p>
+                              </>
                             )}
                           </div>
 
                           <div className="shrink-0">
                             {isAdEditing ? (
-                              <div className="flex flex-col gap-1.5">
-                                <span className="text-[9px] font-bold uppercase text-[var(--sea-ink-soft)]">Tlačítko (CTA)</span>
-                                <input
-                                  type="text"
-                                  value={editFields?.cta || ''}
-                                  onChange={(e) => handleFieldChange('cta', e.target.value)}
-                                  className="demo-input text-xs p-1.5 rounded-lg w-20 text-center"
-                                />
-                              </div>
+                              <input
+                                type="text"
+                                value={editFields?.cta || ''}
+                                onChange={(e) => handleFieldChange('cta', e.target.value)}
+                                className="bg-blue-50/40 dark:bg-blue-900/10 focus:bg-white dark:focus:bg-[#18191A] border border-blue-300 dark:border-blue-700 focus:border-[var(--sea-ink)] rounded-lg px-2 py-1.5 text-center text-[11px] font-bold text-neutral-900 dark:text-neutral-100 w-24 outline-none shadow-inner transition-colors"
+                                placeholder="Tlačítko"
+                              />
                             ) : (
-                              <div className="border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-[10px] font-bold text-neutral-700 dark:text-neutral-200 px-3 py-1.5 rounded-lg select-none">
+                              <div className="bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600 transition-colors text-[11px] font-bold text-neutral-900 dark:text-neutral-100 px-4 py-2 rounded-lg select-none cursor-pointer">
                                 {ad.cta}
                               </div>
                             )}
@@ -877,22 +914,23 @@ function LagoonedgeComponent() {
 
                       {/* Creative idea breakdown (Only visible when not editing) */}
                       {!isAdEditing && (
-                        <div className="mt-2 text-[10px] text-[var(--sea-ink-soft)] bg-[var(--foam)] border border-[var(--line)] p-2.5 rounded-lg text-left">
-                          <strong>Koncept:</strong> {ad.creativeIdea}
+                        <div className="mt-1 mb-2 text-[11px] text-[var(--sea-ink-soft)] bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 p-3 rounded-xl text-left flex gap-2">
+                          <Zap className="h-4 w-4 shrink-0 text-blue-500 mt-0.5" />
+                          <span className="leading-relaxed"><strong>Kreativa:</strong> {ad.creativeIdea}</span>
                         </div>
                       )}
 
                       {/* Card Action Buttons (Edit, Save, Cancel) */}
-                      <div className="mt-auto pt-4 flex gap-2 w-full">
+                      <div className="mt-auto pt-3 flex gap-2 w-full">
                         {isAdEditing ? (
                           <>
                             <button
                               onClick={() => handleSaveAd(ad.id)}
                               disabled={isAdSaving}
-                              className="demo-button text-xs rounded-lg py-2 flex-1 flex justify-center items-center gap-1.5"
+                              className="demo-button text-xs rounded-xl py-2.5 flex-1 flex justify-center items-center gap-1.5"
                             >
                               {isAdSaving ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
                               ) : (
                                 <Save className="h-3.5 w-3.5" />
                               )}
@@ -904,7 +942,7 @@ function LagoonedgeComponent() {
                                 setEditFields(null)
                               }}
                               disabled={isAdSaving}
-                              className="demo-button demo-button-secondary text-xs rounded-lg py-2 flex-1"
+                              className="demo-button demo-button-secondary text-xs rounded-xl py-2.5 flex-1"
                             >
                               Zrušit
                             </button>
@@ -913,9 +951,9 @@ function LagoonedgeComponent() {
                           <button
                             onClick={() => startEditing(ad)}
                             disabled={isAdRegenerating}
-                            className="demo-button demo-button-secondary text-xs rounded-lg py-2 w-full flex justify-center items-center gap-1.5"
+                            className="demo-button demo-button-secondary text-xs rounded-xl py-2.5 w-full flex justify-center items-center gap-1.5 border border-[var(--line)] bg-transparent hover:bg-neutral-100 dark:hover:bg-neutral-800"
                           >
-                            <Save className="h-3.5 w-3.5" />
+                            <Edit2 className="h-3.5 w-3.5" />
                             <span>Upravit reklamu</span>
                           </button>
                         )}

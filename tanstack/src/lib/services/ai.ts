@@ -214,7 +214,11 @@ export async function generateAds(
 
   const prompt = `You are a senior copywriter and creative director. Based on the provided brand profile and candidate images, you generate advertisements.
 Generate exactly ${count} diverse, high-performing ads.
-Select the imageUrl ONLY from the provided Candidate Images list. Do not make up any image URLs. If there are no images or none fit, output null.
+
+CRITICAL RULES FOR DIVERSITY:
+1. Every single ad MUST have a COMPLETELY UNIQUE primary text, headline, and description. DO NOT repeat the same phrases or sentences across the ${count} ads.
+2. Every single ad MUST use a DIFFERENT imageUrl. You must select ${count} different images from the Candidate Images list. DO NOT use the same imageUrl twice.
+3. If there are not enough images, you can use null, but try your best to use unique images.
 
 Brand Profile:
 Company Name: ${brandProfile.companyName}
@@ -258,13 +262,17 @@ ${candidateImages.length > 0 ? candidateImages.join('\n') : 'No images available
   } catch (error: any) {
     console.error('generateAds failed:', error.message);
     // Fallback ad in case of failure
-    return [{
-      creativeIdea: 'Fallback concept',
-      primaryText: `Discover more about ${brandProfile.companyName}.`,
-      headline: `Visit ${brandProfile.companyName}`,
-      description: brandProfile.description !== 'not found' ? brandProfile.description : 'Welcome to our platform.',
-      cta: 'Learn More',
-      imageUrl: candidateImages.length > 0 ? candidateImages[0] : null
-    }];
+    const fallbacks = [];
+    for (let i = 0; i < count; i++) {
+      fallbacks.push({
+        creativeIdea: `Základní návrh reklamy pro ${brandProfile.companyName !== 'not found' ? brandProfile.companyName : 'značku'}`,
+        primaryText: `Zjistěte více o ${brandProfile.companyName !== 'not found' ? brandProfile.companyName : 'naší nabídce'}. ${brandProfile.valueProposition !== 'not found' ? brandProfile.valueProposition : 'Špičkové produkty a služby pro vás.'}`,
+        headline: `Navštivte ${brandProfile.companyName !== 'not found' ? brandProfile.companyName : 'náš web'}`,
+        description: brandProfile.description !== 'not found' ? brandProfile.description.substring(0, 70) + (brandProfile.description.length > 70 ? '...' : '') : 'Vítejte na naší platformě.',
+        cta: i % 2 === 0 ? 'Zjistit více' : 'Více informací',
+        imageUrl: candidateImages.length > i ? candidateImages[i] : (candidateImages.length > 0 ? candidateImages[0] : null)
+      });
+    }
+    return fallbacks;
   }
 }
