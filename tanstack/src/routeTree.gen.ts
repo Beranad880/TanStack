@@ -9,12 +9,24 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TestRouteImport } from './routes/test'
+import { Route as LagoonedgeRouteImport } from './routes/lagoonedge'
 import { Route as DbcheckRouteImport } from './routes/dbcheck'
 import { Route as BrowsercheckRouteImport } from './routes/browsercheck'
 import { Route as AicheckRouteImport } from './routes/aicheck'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiAhojRouteImport } from './routes/api/ahoj'
 
+const TestRoute = TestRouteImport.update({
+  id: '/test',
+  path: '/test',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LagoonedgeRoute = LagoonedgeRouteImport.update({
+  id: '/lagoonedge',
+  path: '/lagoonedge',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DbcheckRoute = DbcheckRouteImport.update({
   id: '/dbcheck',
   path: '/dbcheck',
@@ -46,6 +58,8 @@ export interface FileRoutesByFullPath {
   '/aicheck': typeof AicheckRoute
   '/browsercheck': typeof BrowsercheckRoute
   '/dbcheck': typeof DbcheckRoute
+  '/lagoonedge': typeof LagoonedgeRoute
+  '/test': typeof TestRoute
   '/api/ahoj': typeof ApiAhojRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +67,8 @@ export interface FileRoutesByTo {
   '/aicheck': typeof AicheckRoute
   '/browsercheck': typeof BrowsercheckRoute
   '/dbcheck': typeof DbcheckRoute
+  '/lagoonedge': typeof LagoonedgeRoute
+  '/test': typeof TestRoute
   '/api/ahoj': typeof ApiAhojRoute
 }
 export interface FileRoutesById {
@@ -61,14 +77,38 @@ export interface FileRoutesById {
   '/aicheck': typeof AicheckRoute
   '/browsercheck': typeof BrowsercheckRoute
   '/dbcheck': typeof DbcheckRoute
+  '/lagoonedge': typeof LagoonedgeRoute
+  '/test': typeof TestRoute
   '/api/ahoj': typeof ApiAhojRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/aicheck' | '/browsercheck' | '/dbcheck' | '/api/ahoj'
+  fullPaths:
+    | '/'
+    | '/aicheck'
+    | '/browsercheck'
+    | '/dbcheck'
+    | '/lagoonedge'
+    | '/test'
+    | '/api/ahoj'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/aicheck' | '/browsercheck' | '/dbcheck' | '/api/ahoj'
-  id: '__root__' | '/' | '/aicheck' | '/browsercheck' | '/dbcheck' | '/api/ahoj'
+  to:
+    | '/'
+    | '/aicheck'
+    | '/browsercheck'
+    | '/dbcheck'
+    | '/lagoonedge'
+    | '/test'
+    | '/api/ahoj'
+  id:
+    | '__root__'
+    | '/'
+    | '/aicheck'
+    | '/browsercheck'
+    | '/dbcheck'
+    | '/lagoonedge'
+    | '/test'
+    | '/api/ahoj'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -76,11 +116,27 @@ export interface RootRouteChildren {
   AicheckRoute: typeof AicheckRoute
   BrowsercheckRoute: typeof BrowsercheckRoute
   DbcheckRoute: typeof DbcheckRoute
+  LagoonedgeRoute: typeof LagoonedgeRoute
+  TestRoute: typeof TestRoute
   ApiAhojRoute: typeof ApiAhojRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/test': {
+      id: '/test'
+      path: '/test'
+      fullPath: '/test'
+      preLoaderRoute: typeof TestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lagoonedge': {
+      id: '/lagoonedge'
+      path: '/lagoonedge'
+      fullPath: '/lagoonedge'
+      preLoaderRoute: typeof LagoonedgeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dbcheck': {
       id: '/dbcheck'
       path: '/dbcheck'
@@ -124,6 +180,8 @@ const rootRouteChildren: RootRouteChildren = {
   AicheckRoute: AicheckRoute,
   BrowsercheckRoute: BrowsercheckRoute,
   DbcheckRoute: DbcheckRoute,
+  LagoonedgeRoute: LagoonedgeRoute,
+  TestRoute: TestRoute,
   ApiAhojRoute: ApiAhojRoute,
 }
 export const routeTree = rootRouteImport
