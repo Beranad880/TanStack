@@ -239,7 +239,11 @@ const deleteLagoonedgeSiteFn = createServerFn({ method: 'POST' })
     try {
       const db = await getDb()
       
-      // Delete the site (cascades automatically to ads and brand profile)
+      // Explicitly delete children first (SQLite doesn't always cascade by default without PRAGMA foreign_keys = ON)
+      await db.delete(ads).where(eq(ads.siteId, siteId))
+      await db.delete(brandProfiles).where(eq(brandProfiles.siteId, siteId))
+      
+      // Finally delete the site itself
       await db.delete(sites).where(eq(sites.id, siteId))
 
       return { success: true }

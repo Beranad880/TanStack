@@ -5,6 +5,11 @@ import * as cheerio from 'cheerio'
  * Clean HTML content to leave only readable text by removing styles, scripts, SVGs, etc.
  */
 function cleanHtmlText(html: string): string {
+  // Extract hex colors from the raw HTML before stripping tags
+  const hexColors = html.match(/#[0-9a-fA-F]{6}\b/g) || [];
+  // Get up to 20 unique colors to provide as context
+  const uniqueColors = Array.from(new Set(hexColors)).slice(0, 20);
+
   // Replace script and style tags and their contents
   let clean = html.replace(/<(script|style|svg|iframe|canvas|noscript)[^>]*>([\s\S]*?)<\/\1>/gi, '');
   // Remove navigation and footer tags to focus on the main content
@@ -16,7 +21,12 @@ function cleanHtmlText(html: string): string {
   // Collapse whitespace
   clean = clean.replace(/\s+/g, ' ').trim();
   // Limit length to avoid blowing up context window (approx 6000 words max)
-  return clean.substring(0, 24000);
+  const truncated = clean.substring(0, 24000);
+
+  if (uniqueColors.length > 0) {
+    return truncated + `\n\n[System Note - Possible brand colors found in HTML/CSS source code: ${uniqueColors.join(', ')}]`;
+  }
+  return truncated;
 }
 
 /**
