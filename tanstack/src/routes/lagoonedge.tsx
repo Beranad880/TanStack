@@ -608,8 +608,6 @@ function LagoonedgeComponent() {
                 {/* Cost/Latency badge */}
                 <div className="rounded-full border border-[var(--line)] bg-[var(--chip-bg)] px-4 py-2 text-xs font-semibold flex items-center gap-4">
                   <span>⏱️ <strong>{(selected.site.latencyMs / 1000).toFixed(1)}s</strong> latence</span>
-                  <span className="h-3 w-px bg-[var(--line)]" />
-                  <span>💵 <strong>{selected.site.costUsd.toFixed(2)} $</strong> cena</span>
                 </div>
                 
                 <Link
