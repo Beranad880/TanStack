@@ -14,7 +14,10 @@
     "lint": "eslint",
     "format": "prettier --write . && eslint --fix",
     "check": "prettier --check .",
-    "deploy": "npm run build && wrangler deploy"
+    "deploy": "npm run build && wrangler deploy",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply my-binding-database --local",
+    "db:migrate:prod": "wrangler d1 migrations apply my-binding-database --remote"
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "^1.26.0",
@@ -27,6 +30,7 @@
     "@tanstack/router-plugin": "^1.132.0",
     "lucide-react": "^0.545.0",
     "react": "^19.2.0",
+    "drizzle-orm": "^0.45.2",
     "react-dom": "^19.2.0",
     "tailwindcss": "^4.1.18"
   },
@@ -41,6 +45,7 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^6.0.1",
+    "drizzle-kit": "^0.31.10",
     "eslint": "^9.20.0",
     "jsdom": "^28.1.0",
     "prettier": "^3.8.1",
@@ -48,6 +53,9 @@
     "vite": "^8.0.0",
     "vitest": "^4.1.5",
     "wrangler": "^4.70.0"
+  },
+  "overrides": {
+    "esbuild": "^0.25.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

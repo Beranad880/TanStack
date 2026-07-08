@@ -9,9 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as DbcheckRouteImport } from './routes/dbcheck'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiAhojRouteImport } from './routes/api/ahoj'
 
+const DbcheckRoute = DbcheckRouteImport.update({
+  id: '/dbcheck',
+  path: '/dbcheck',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -25,32 +31,43 @@ const ApiAhojRoute = ApiAhojRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dbcheck': typeof DbcheckRoute
   '/api/ahoj': typeof ApiAhojRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dbcheck': typeof DbcheckRoute
   '/api/ahoj': typeof ApiAhojRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dbcheck': typeof DbcheckRoute
   '/api/ahoj': typeof ApiAhojRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/ahoj'
+  fullPaths: '/' | '/dbcheck' | '/api/ahoj'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/ahoj'
-  id: '__root__' | '/' | '/api/ahoj'
+  to: '/' | '/dbcheck' | '/api/ahoj'
+  id: '__root__' | '/' | '/dbcheck' | '/api/ahoj'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DbcheckRoute: typeof DbcheckRoute
   ApiAhojRoute: typeof ApiAhojRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/dbcheck': {
+      id: '/dbcheck'
+      path: '/dbcheck'
+      fullPath: '/dbcheck'
+      preLoaderRoute: typeof DbcheckRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -70,6 +87,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DbcheckRoute: DbcheckRoute,
   ApiAhojRoute: ApiAhojRoute,
 }
 export const routeTree = rootRouteImport

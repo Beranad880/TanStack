@@ -1,213 +1,120 @@
-Welcome to your new TanStack Start app!
+# TanStack Start App s Drizzle ORM & Cloudflare D1
 
-# Getting Started
+Tento projekt je moderní full-stack webová aplikace postavená na technologii **[TanStack Start](https://tanstack.com/router/latest/docs/framework/react/start/overview)** (React framework založený na **TanStack Router**). Aplikace je optimalizována pro běh v serverless edge prostředí **Cloudflare** (Workers / Pages) a pro správu dat využívá databázi **Cloudflare D1** společně s **Drizzle ORM**.
 
-To run this application:
+Vzhled a stylování zajišťuje **Tailwind CSS v4.0** a rychlé sestavení aplikace obstarává **Vite**.
 
+---
+
+## 📂 Adresářová struktura a význam souborů
+
+```
+tanstack/
+├── drizzle/                # Složka obsahující vygenerované SQL migrace pro D1 databázi
+├── public/                 # Statické soubory (ikony, obrázky) kopírované přímo do buildu
+├── src/                    # Hlavní zdrojový kód aplikace
+│   ├── db/                 # Nastavení a konfigurace databáze
+│   │   ├── index.ts        # Inicializace klienta Drizzle ORM (vývojová proxy / produkční binding)
+│   │   └── schema.ts       # Databázové schéma (definice tabulek a relací)
+│   ├── components/         # Znovupoužitelné UI komponenty
+│   ├── routes/             # Souborově orientované směrování (file-based routing)
+│   │   ├── api/            # Serverové API trasy (běžící na Cloudflare Workeru)
+│   │   │   └── ahoj.ts     # Ukázková API trasa komunikující s databází D1
+│   │   ├── __root.tsx      # Globální rozvržení (layout), HTML struktura, správa tmavého motivu
+│   │   └── index.tsx       # Domovská stránka (/) zobrazující data z databáze
+│   ├── routeTree.gen.ts    # Automaticky generovaný strom tras (vytváří TanStack Router)
+│   ├── router.tsx          # Konfigurace a inicializace instance routeru
+│   └── styles.css          # Globální CSS styly a nastavení barevných témat v Tailwind CSS v4.0
+├── drizzle.config.ts       # Konfigurace pro Drizzle Kit (generátor migrací)
+├── eslint.config.js        # Konfigurace ESLint (statická analýza kódu)
+├── package.json            # Závislosti projektu, metadata a NPM skripty
+├── prettier.config.js      # Konfigurace formátování kódu Prettier
+├── tsconfig.json           # Konfigurace TypeScriptu
+├── tsr.config.json         # Konfigurace pro generátor tras TanStack Router
+├── vite.config.ts          # Konfigurace sestavení Vite (pluginy React, Tailwind, Cloudflare, TanStack)
+└── wrangler.jsonc          # Konfigurace nasazení na platformu Cloudflare (databázové vazby a proměnné)
+```
+
+---
+
+## 💾 Databáze (Cloudflare D1 & Drizzle ORM)
+
+Projekt používá SQL databázi **Cloudflare D1** a **Drizzle ORM** pro typově bezpečné dotazování.
+
+*   **Definice schématu**: Tabulky a sloupce se definují v souboru `src/db/schema.ts`.
+*   **Inicializace databáze**: Soubor `src/db/index.ts` automaticky detekuje prostředí. Během vývoje využívá Wrangler platform proxy k simulaci D1 na lokálním SQLite, v produkci se připojuje přímo k bindingu `MY_BINDING`.
+
+---
+
+## 🚀 Jak začít (Lokální spuštění)
+
+Pro lokální běh projektu postupujte podle následujících kroků:
+
+### 1. Instalace závislostí
 ```bash
 npm install
+```
+
+### 2. Generování a aplikace databázových migrací
+Nejprve převeďte kód schématu do SQL souborů a poté je aplikujte na lokální SQLite databázi:
+```bash
+# Vygenerování SQL migrací
+npm run db:generate
+
+# Aplikace migrací na lokální SQLite (spravované Wranglerem)
+npm run db:migrate:local
+```
+
+### 3. Spuštění vývojového serveru
+```bash
 npm run dev
 ```
+Aplikace poběží na adrese [http://localhost:3000](http://localhost:3000).
 
-# Building For Production
+---
 
-To build this application for production:
+## 🌐 Nasazení na Cloudflare (Production)
 
+### 1. Vytvoření D1 databáze v Cloudflare
+Pokud ještě nemáte vytvořenou D1 databázi, vytvořte ji přes Wrangler CLI:
 ```bash
-npm run build
+npx wrangler d1 create my-binding-database
 ```
+Příkaz vám vygeneruje ID databáze (např. `database_id = "56a29e12-c2e3-4903-8d02-3c1c73a628be"`).
 
-## Testing
+### 2. Aktualizace ID v konfiguraci
+Otevřete soubor `wrangler.jsonc` a v sekci `d1_databases` nahraďte hodnotu `"YOUR_D1_DATABASE_ID_HERE"` za ID, které jste získali v předchozím kroku.
 
-This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
-
+### 3. Spuštění migrací na produkční databázi
+Aplikujte SQL schéma na ostrou databázi v Cloudflare:
 ```bash
-npm run test
+npm run db:migrate:prod
 ```
 
-## Styling
-
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
-
-### Removing Tailwind CSS
-
-If you prefer not to use Tailwind CSS:
-
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Uninstall the packages: `npm install @tailwindcss/vite tailwindcss -D`
-
-## Linting & Formatting
-
-This project uses [eslint](https://eslint.org/) and [prettier](https://prettier.io/) for linting and formatting. Eslint is configured using [tanstack/eslint-config](https://tanstack.com/config/latest/docs/eslint). The following scripts are available:
-
+### 4. Sestavení a nahrání aplikace (Deployment)
+Spusťte produkční build a nasazení:
 ```bash
-npm run lint
-npm run format
-npm run check
+npm run deploy
 ```
 
-## Deploy to Cloudflare Workers
+*Poznámka: Pokud nasazujete automaticky přes Git integraci v Cloudflare Pages, ujistěte se, že máte v nastavení projektu v Cloudflare dashboardu nastaven **Root directory** (Kořenový adresář) na složku `tanstack` a **Build command** na `npm run deploy`.*
 
-This project uses the Cloudflare Vite plugin (configured in `vite.config.ts`) and `wrangler.jsonc`:
+---
 
-1. Install Wrangler: `npm install -g wrangler`
-2. Authenticate: `wrangler login`
-3. Deploy: `npx wrangler deploy`
+## 🛠️ Přehled NPM skriptů
 
-For production env vars, run `wrangler secret put MY_VAR` for each secret listed in `.env.example`. Public (non-secret) vars go in `wrangler.jsonc` under `vars`.
+Všechny příkazy spouštějte v podadresáři `tanstack/`:
 
-KV, D1, R2, and Durable Object bindings are configured in `wrangler.jsonc` — see https://developers.cloudflare.com/workers/wrangler/configuration/.
-
-## Routing
-
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from '@tanstack/react-router'
-```
-
-Then anywhere in your JSX you can use it like so:
-
-```tsx
-<Link to="/about">About</Link>
-```
-
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'My App' },
-    ],
-  }),
-  shellComponent: ({ children }) => (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <header>
-          <nav>
-            <Link to="/">Home</Link>
-            <Link to="/about">About</Link>
-          </nav>
-        </header>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  ),
-})
-```
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-## Server Functions
-
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
-
-```tsx
-import { createServerFn } from '@tanstack/react-start'
-
-const getServerTime = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  return new Date().toISOString()
-})
-
-// Use in a component
-function MyComponent() {
-  const [time, setTime] = useState('')
-
-  useEffect(() => {
-    getServerTime().then(setTime)
-  }, [])
-
-  return <div>Server time: {time}</div>
-}
-```
-
-## API Routes
-
-You can create API routes by using the `server` property in your route definitions:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-import { json } from '@tanstack/react-start'
-
-export const Route = createFileRoute('/api/hello')({
-  server: {
-    handlers: {
-      GET: () => json({ message: 'Hello, World!' }),
-    },
-  },
-})
-```
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/people')({
-  loader: async () => {
-    const response = await fetch('https://swapi.dev/api/people')
-    return response.json()
-  },
-  component: PeopleComponent,
-})
-
-function PeopleComponent() {
-  const data = Route.useLoaderData()
-  return (
-    <ul>
-      {data.results.map((person) => (
-        <li key={person.name}>{person.name}</li>
-      ))}
-    </ul>
-  )
-}
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-# Demo files
-
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+| Skript | Příkaz pod kapotou | Popis |
+| :--- | :--- | :--- |
+| `npm run dev` | `vite dev --port 3000` | Spustí lokální vývojový server |
+| `npm run build` | `vite build` | Zkompiluje aplikaci (klient + server) pro produkci |
+| `npm run preview` | `vite preview` | Lokálně spustí náhled produkčního sestavení |
+| `npm run deploy` | `npm run build && wrangler deploy` | Sestaví projekt a nahraje jej na Cloudflare |
+| `npm run db:generate` | `drizzle-kit generate` | Vytvoří SQL migrační soubory z kódu ve `schema.ts` |
+| `npm run db:migrate:local` | `wrangler d1 migrations apply my-binding-database --local` | Aplikuje SQL změny na lokální SQLite |
+| `npm run db:migrate:prod` | `wrangler d1 migrations apply my-binding-database --remote` | Aplikuje SQL změny na produkční Cloudflare D1 |
+| `npm run generate-routes` | `tsr generate` | Ručně přegeneruje strom tras `routeTree.gen.ts` |
+| `npm run test` | `vitest run` | Spustí testy pomocí Vitest |
+| `npm run lint` | `eslint` | Provede analýzu kódu a vyhledá syntaktické chyby |
+| `npm run format` | `prettier --write . && eslint --fix` | Automaticky naformátuje kód |

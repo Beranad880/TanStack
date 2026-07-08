@@ -16,6 +16,13 @@ const config = defineConfig({
     tanstackStart(),
     viteReact(),
   ],
+  environments: {
+    ssr: {
+      optimizeDeps: {
+        include: ['react-dom/server'],
+      },
+    },
+  },
 })
 
 export default config
