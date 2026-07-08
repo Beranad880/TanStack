@@ -493,10 +493,6 @@ function LagoonedgeComponent() {
             <span>LagoonEdge</span>
           </Link>
         </div>
-        <Link to="/test" className="text-xs font-semibold text-[var(--sea-ink-soft)] no-underline hover:text-[var(--sea-ink)] flex items-center gap-1">
-          <span>Testy</span>
-          <ArrowRight className="h-3 w-3" />
-        </Link>
       </header>
 
       {/* 2. MAIN WORKSPACE */}
