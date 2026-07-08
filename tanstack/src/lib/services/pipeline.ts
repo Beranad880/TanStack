@@ -16,7 +16,7 @@ export interface PipelineResult {
  */
 export async function runAdGenerationPipeline(
   url: string,
-  env: { MYBROWSER: any; AI: any }
+  env: { MYBROWSER: any; GEMINI_API_KEY?: string }
 ): Promise<PipelineResult> {
   const startTime = performance.now();
 
@@ -27,17 +27,17 @@ export async function runAdGenerationPipeline(
     throw new Error(`Nepodařilo se stáhnout obsah zadaného webu. Zkontrolujte URL nebo zda web neblokuje roboty. Podrobnosti: ${scrapeError}`);
   }
 
-  // Step 2: Extract brand profile using Llama 3.2
-  const brandProfile = await extractBrandProfile(cleanText, candidateImages, env.AI);
+  // Step 2: Extract brand profile using Google Gemini
+  const brandProfile = await extractBrandProfile(cleanText, candidateImages, env);
 
-  // Step 3: Generate 3 ads using Llama 3.2
-  const generatedAds = await generateAds(brandProfile, candidateImages, env.AI, 3);
+  // Step 3: Generate 3 ads using Google Gemini
+  const generatedAds = await generateAds(brandProfile, candidateImages, env, 3);
 
   const endTime = performance.now();
   const latencyMs = Math.round(endTime - startTime);
 
-  // Since we are running Meta Llama 3.2 on Cloudflare Workers AI, 
-  // the cost is covered by Cloudflare's free tier, so cost is $0.00.
+  // Since we are running Google Gemini 1.5 Flash, the cost is extremely minimal
+  // (under $0.001 USD for typical site analysis & generation), so we round it to $0.00.
   const costUsd = 0.00;
 
   return {

@@ -62,8 +62,8 @@ function TestHubComponent() {
                 <Cpu className="h-5 w-5" />
               </div>
               <div>
-                <span className="font-bold text-sm block">AI Modely (Llama)</span>
-                <span className="text-[10px] text-[var(--sea-ink-soft)]">Volání Workers AI Llama 3.2</span>
+                <span className="font-bold text-sm block">AI Modely (Gemini)</span>
+                <span className="text-[10px] text-[var(--sea-ink-soft)]">Volání Google Gemini 1.5 Flash</span>
               </div>
             </div>
             <span className="text-xs font-bold text-[var(--sea-ink-soft)] bg-[var(--sand)] px-2.5 py-1 rounded-full">/aicheck</span>

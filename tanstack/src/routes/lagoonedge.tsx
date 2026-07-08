@@ -9,8 +9,8 @@ import { generateAds } from '../lib/services/ai'
 // @ts-ignore - cloudflare:workers je virtuální modul poskytovaný Vite pluginem
 import { env } from 'cloudflare:workers'
 import { 
-  Compass, ArrowLeft, ArrowRight, Loader2, Sparkles, 
-  RotateCw, Save, Check, Globe, HelpCircle, Eye, RefreshCw 
+  Compass, ArrowRight, Loader2, Sparkles, 
+  Save, Check, Globe, Eye, RefreshCw, X, Clock 
 } from 'lucide-react'
 
 // --- SERVER FUNCTIONS ---
@@ -169,7 +169,7 @@ const saveAdEditFn = createServerFn({ method: 'POST' })
     }
   })
 
-// 4. Regenerate a single ad concept using Llama
+// 4. Regenerate a single ad concept using Gemini
 const regenerateAdFn = createServerFn({ method: 'POST' })
   .validator((data: { siteId: string; adId: string }) => data)
   .handler(async ({ data }) => {
@@ -190,7 +190,7 @@ const regenerateAdFn = createServerFn({ method: 'POST' })
       const profile = profileList[0]
       const candidateImages: string[] = JSON.parse(profile.candidateImages)
 
-      // Call Llama to generate exactly 1 ad
+      // Call Gemini to generate exactly 1 ad
       const generatedAds = await generateAds(
         {
           companyName: profile.companyName,
@@ -201,7 +201,7 @@ const regenerateAdFn = createServerFn({ method: 'POST' })
           colorPalette: JSON.parse(profile.colorPalette)
         },
         candidateImages,
-        (env as any).AI,
+        env,
         1
       )
 
@@ -229,6 +229,29 @@ const regenerateAdFn = createServerFn({ method: 'POST' })
     } catch (error: any) {
       console.error('regenerateAdFn failed:', error.message)
       throw new Error(`Regenerace selhala: ${error.message}`)
+    }
+  })
+
+// 5. Delete a site and its ads / brand profile
+const deleteLagoonedgeSiteFn = createServerFn({ method: 'POST' })
+  .validator((siteId: string) => siteId)
+  .handler(async ({ data: siteId }) => {
+    try {
+      const db = await getDb()
+      
+      // Delete associated ads
+      await db.delete(ads).where(eq(ads.siteId, siteId))
+      
+      // Delete associated brand profile
+      await db.delete(brandProfiles).where(eq(brandProfiles.siteId, siteId))
+      
+      // Delete the site
+      await db.delete(sites).where(eq(sites.id, siteId))
+
+      return { success: true }
+    } catch (error: any) {
+      console.error('deleteLagoonedgeSiteFn failed:', error.message)
+      throw new Error(`Smazání selhalo: ${error.message}`)
     }
   })
 
@@ -275,6 +298,29 @@ function LagoonedgeComponent() {
   const [regeneratingAdId, setRegeneratingAdId] = useState<string | null>(null)
   const [saveSuccessAdId, setSaveSuccessAdId] = useState<string | null>(null)
 
+  // Handle deleting a campaign
+  const handleDeleteSite = async (e: React.MouseEvent, id: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!confirm('Opravdu chcete tuto reklamní kampaň kompletně smazat?')) return
+
+    try {
+      await deleteLagoonedgeSiteFn({ data: id })
+      
+      // If we are currently viewing the deleted site, reset URL parameter
+      if (siteId === id) {
+        router.navigate({
+          to: '/lagoonedge',
+          search: { siteId: undefined }
+        })
+      } else {
+        router.invalidate() // Refresh data (reload history list)
+      }
+    } catch (err: any) {
+      alert(`Chyba při mazání: ${err.message}`)
+    }
+  }
+
   // Start generation pipeline
   const handleGenerate = (e: React.FormEvent) => {
     e.preventDefault()
@@ -287,7 +333,7 @@ function LagoonedgeComponent() {
       try {
         // Step 1: Set step timer simulator
         const stepTimer = setTimeout(() => {
-          setLoadingStep('🧠 Krok 2/3: Extrakce brand profilu přes Meta Llama 3.2...')
+          setLoadingStep('🧠 Krok 2/3: Extrakce brand profilu přes Google Gemini...')
         }, 5500)
         
         const stepTimer2 = setTimeout(() => {
@@ -302,6 +348,7 @@ function LagoonedgeComponent() {
         setInputUrl('')
         setLoadingStep('')
         router.navigate({
+          to: '/lagoonedge',
           search: { siteId: result.siteId }
         })
       } catch (err: any) {
@@ -407,8 +454,78 @@ function LagoonedgeComponent() {
         </Link>
       </header>
 
-      {/* 2. MAIN CONTAINER AREA */}
-      <main className="flex-1 p-6 md:p-12 overflow-y-auto max-w-5xl mx-auto w-full">
+      {/* 2. MAIN WORKSPACE WITH SIDEBAR */}
+      <div className="flex-1 flex flex-col md:flex-row w-full min-h-0">
+        
+        {/* SIDEBAR: History of Campaigns */}
+        <aside className="w-full md:w-80 border-b md:border-b-0 md:border-r border-[var(--line)] bg-[var(--surface)]/20 backdrop-blur-xs p-5 flex flex-col gap-4 shrink-0 md:overflow-y-auto md:max-h-[calc(100vh-73px)]">
+          <div className="flex items-center justify-between pb-3 border-b border-[var(--line)]">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--sea-ink)] flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5 text-[var(--sea-ink-soft)]" />
+              <span>Historie kampaní</span>
+            </h2>
+            <Link
+              to="/lagoonedge"
+              search={{ siteId: undefined }}
+              className="text-[10px] font-bold text-[var(--sea-ink-soft)] hover:text-[var(--sea-ink)] no-underline px-2 py-1 rounded-md border border-[var(--line)] bg-[var(--surface)] hover:bg-neutral-200"
+            >
+              + Nová
+            </Link>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            {history.length === 0 ? (
+              <p className="text-xs text-[var(--sea-ink-soft)] italic p-4 text-center">
+                Žádné předchozí kampaně.
+              </p>
+            ) : (
+              history.map((item: any) => {
+                const cleanUrl = item.url.replace(/^https?:\/\/(www\.)?/i, '')
+                const formattedDate = new Date(item.createdAt).toLocaleDateString('cs-CZ', {
+                  day: 'numeric',
+                  month: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })
+                const isActive = siteId === item.id
+
+                return (
+                  <Link
+                    key={item.id}
+                    to="/lagoonedge"
+                    search={{ siteId: item.id }}
+                    className={`flex items-center justify-between gap-3 p-3 rounded-xl border text-xs no-underline transition-all group ${
+                      isActive
+                        ? 'border-[var(--sea-ink)] bg-[var(--sand)] font-bold text-[var(--sea-ink)] shadow-sm'
+                        : 'border-[var(--line)] bg-[var(--surface)]/50 hover:bg-[var(--link-bg-hover)] text-[var(--sea-ink-soft)] hover:text-[var(--sea-ink)]'
+                    }`}
+                  >
+                    <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                      <span className="truncate font-semibold text-[var(--sea-ink)]">
+                        {cleanUrl}
+                      </span>
+                      <span className="text-[10px] text-[var(--sea-ink-soft)] font-normal">
+                        {formattedDate}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={(e) => handleDeleteSite(e, item.id)}
+                      title="Odstranit kampaň"
+                      className="p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-red-100/60 dark:hover:bg-red-950/40 text-neutral-400 hover:text-red-600 transition-all shrink-0 cursor-pointer"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </Link>
+                )
+              })
+            )}
+          </div>
+        </aside>
+
+        {/* MAIN CONTENT AREA */}
+        <main className="flex-1 p-6 md:p-12 w-full md:overflow-y-auto md:max-h-[calc(100vh-73px)]">
+          <div className="max-w-5xl mx-auto w-full">
         
         {/* A. SCENE 1: URL input page (If no site is currently selected/viewed) */}
         {!selected ? (
@@ -418,7 +535,7 @@ function LagoonedgeComponent() {
                 Brand & Ad Generator
               </h1>
               <p className="text-sm text-[var(--sea-ink-soft)] leading-relaxed">
-                Zadejte libovolné URL firmy. Puppeteer web zanalyzuje a Llama 3.2 extrahuje tón značky a vygeneruje 3 hotové reklamy.
+                Zadejte libovolné URL firmy. Puppeteer web zanalyzuje a Google Gemini extrahuje tón značky a vygeneruje 3 hotové reklamy.
               </p>
             </div>
 
@@ -814,7 +931,10 @@ function LagoonedgeComponent() {
           </div>
         )}
 
-      </main>
+          </div>
+        </main>
+
+      </div>
 
     </div>
   )

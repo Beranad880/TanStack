@@ -27,9 +27,6 @@
       "migrations_dir": "drizzle"
     }
   ],
-  "ai": {
-    "binding": "AI"
-  },
   "browser": {
     "binding": "MYBROWSER"
   }

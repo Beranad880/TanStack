@@ -3,34 +3,49 @@ import { createServerFn } from '@tanstack/react-start'
 // @ts-ignore: cloudflare:workers is a virtual module provided by Vite plugin
 import { env } from 'cloudflare:workers'
 import { useState } from 'react'
+import geminiConfig from '../../gemini-config.json'
 
-// Serverová funkce pro volání Cloudflare Workers AI - běží výhradně na serveru
-const askLlamaFn = createServerFn({ method: 'POST' })
+// Serverová funkce pro volání Google Gemini - běžící výhradně na serveru
+const askGeminiFn = createServerFn({ method: 'POST' })
   .validator((d: { prompt: string }) => d)
   .handler(async ({ data }) => {
     try {
-      const ai = (env as any).AI
+      const apiKey = (env as any).GEMINI_API_KEY
 
-      if (!ai) {
+      if (!apiKey) {
         return {
           success: false,
-          error: 'Cloudflare AI binding "AI" nebyl nalezen v konfiguraci wrangler.jsonc, nebo neběží lokální simulace.'
+          error: 'API klíč "GEMINI_API_KEY" nebyl nalezen v konfiguraci Workers.'
         }
       }
 
-      // Voláme bezplatný model Llama 3.2 3B běžící přímo na Cloudflare
-      const response = await ai.run(
-        '@cf/meta/llama-3.2-3b-instruct',
-        {
-          messages: [
-            { role: 'system', content: 'You are a friendly assistant' },
-            { role: 'user', content: data.prompt },
-          ],
-        }
-      )
+      const modelName = geminiConfig.model || 'gemini-2.5-flash'
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: data.prompt }]
+            }
+          ]
+        })
+      })
 
-      // Výstupní text z modelu Llama se nachází ve vlastnosti 'response'
-      const text = response.response
+      if (!response.ok) {
+        const errorText = await response.text()
+        return {
+          success: false,
+          error: `Gemini API error (HTTP ${response.status}): ${errorText}`
+        }
+      }
+
+      const result = await response.json()
+      const text = result.candidates?.[0]?.content?.parts?.[0]?.text
 
       if (!text) {
         return { success: false, error: 'Model vrátil prázdnou odpověď nebo neočekávanou strukturu.' }
@@ -38,7 +53,7 @@ const askLlamaFn = createServerFn({ method: 'POST' })
 
       return { success: true, text }
     } catch (error: any) {
-      console.error('Llama AI Error:', error)
+      console.error('Gemini AI Error:', error)
       return { success: false, error: error.message || String(error) }
     }
   })
@@ -53,12 +68,12 @@ function AiCheckComponent() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleAskLlama = async () => {
+  const handleAskGemini = async () => {
     setLoading(true)
     setError(null)
     setResponse(null)
     try {
-      const res = await askLlamaFn({ data: { prompt } })
+      const res = await askGeminiFn({ data: { prompt } })
       if (res.success) {
         setResponse(res.text || null)
       } else {
@@ -74,14 +89,14 @@ function AiCheckComponent() {
   return (
     <main className="flex min-h-screen items-center justify-center p-4">
       <section className="island-shell rise-in max-w-2xl w-full rounded-[2rem] p-8 sm:p-12">
-        <h1 className="display-title mb-6 text-3xl font-extrabold text-[var(--sea-ink)] text-center">
-          Cloudflare Workers AI
+        <h1 className="display-title mb-6 text-3xl font-extrabold text-[var(--sea-ink)] text-center capitalize">
+          Google {geminiConfig.model.replace('models/', '').replace(/-/g, ' ')}
         </h1>
 
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
             <label className="text-xs font-semibold text-[var(--sea-ink-soft)] uppercase tracking-wider">
-              Otázka pro model Llama 3.2 (Prompt)
+              Otázka pro model Gemini (Prompt)
             </label>
             <textarea
               value={prompt}
@@ -94,16 +109,16 @@ function AiCheckComponent() {
           </div>
 
           <button
-            onClick={handleAskLlama}
+            onClick={handleAskGemini}
             disabled={loading || !prompt.trim()}
             className="demo-button w-full relative z-10 rounded-full px-6 py-3 shadow-md transition-all hover:scale-[1.01]"
           >
-            {loading ? 'Generování odpovědi přes Llama 3.2...' : 'Odeslat dotaz do Llama 3.2'}
+            {loading ? `Generování odpovědi přes ${geminiConfig.model}...` : 'Odeslat dotaz do Gemini'}
           </button>
 
           {error && (
             <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-4 text-rose-800 dark:text-rose-300 text-sm">
-              <p className="font-semibold">🔴 Chyba při volání Workers AI:</p>
+              <p className="font-semibold">🔴 Chyba při volání Gemini API:</p>
               <p className="text-xs mt-2 font-mono break-all bg-black/5 dark:bg-black/20 p-2 rounded">{error}</p>
             </div>
           )}
@@ -111,7 +126,7 @@ function AiCheckComponent() {
           {response && (
             <div className="flex flex-col gap-2 border-t border-[var(--line)] pt-4 w-full">
               <p className="font-semibold text-xs text-[var(--sea-ink-soft)] uppercase tracking-wider">
-                Odpověď z modelu Llama-3.2-3b-instruct:
+                Odpověď z modelu Gemini:
               </p>
               <div className="p-4 rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.4)] dark:bg-[rgba(10,20,24,0.4)] text-sm leading-relaxed text-[var(--sea-ink)] max-h-80 overflow-y-auto whitespace-pre-wrap font-sans">
                 {response}
