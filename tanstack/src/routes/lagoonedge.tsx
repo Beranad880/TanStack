@@ -805,9 +805,11 @@ function LagoonedgeComponent() {
                         
                         {/* Header: Avatar + Domain text */}
                         <div className="flex items-center gap-2 p-3 pb-2">
-                          <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center shrink-0 shadow-sm text-white font-bold text-xs">
-                            {selected.site.url.replace(/^https?:\/\/(www\.)?/i, '').charAt(0).toUpperCase()}
-                          </div>
+                          <img 
+                            src={`https://s2.googleusercontent.com/s2/favicons?domain=${selected.site.url.replace(/^https?:\/\/(www\.)?/i, '').split('/')[0]}&sz=128`}
+                            alt="Logo"
+                            className="h-8 w-8 rounded-full shadow-sm shrink-0 object-cover border border-[var(--line)] bg-white"
+                          />
                           <div className="flex flex-col">
                             <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100 hover:underline cursor-pointer">
                               {selected.brandProfile.companyName !== 'not found' ? selected.brandProfile.companyName : selected.site.url.replace(/^https?:\/\/(www\.)?/i, '')}

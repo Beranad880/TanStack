@@ -45,23 +45,28 @@ export interface AdOutput {
  */
 function cleanJsonResponse(text: string): string {
   let cleaned = text.trim();
-
-  const firstBrace = cleaned.indexOf('{');
-  const lastBrace = cleaned.lastIndexOf('}');
-  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-    return cleaned.substring(firstBrace, lastBrace + 1);
-  }
-
-  const firstBracket = cleaned.indexOf('[');
-  const lastBracket = cleaned.lastIndexOf(']');
-  if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
-    return cleaned.substring(firstBracket, lastBracket + 1);
-  }
-
   cleaned = cleaned.replace(/^```json\s*/i, '');
   cleaned = cleaned.replace(/^```\s*/i, '');
   cleaned = cleaned.replace(/```$/, '');
-  return cleaned.trim();
+  cleaned = cleaned.trim();
+
+  const firstBrace = cleaned.indexOf('{');
+  const firstBracket = cleaned.indexOf('[');
+
+  // Zjistíme, jestli struktura začíná jako objekt nebo jako pole
+  if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
+    const lastBrace = cleaned.lastIndexOf('}');
+    if (lastBrace > firstBrace) {
+      return cleaned.substring(firstBrace, lastBrace + 1);
+    }
+  } else if (firstBracket !== -1 && (firstBrace === -1 || firstBracket < firstBrace)) {
+    const lastBracket = cleaned.lastIndexOf(']');
+    if (lastBracket > firstBracket) {
+      return cleaned.substring(firstBracket, lastBracket + 1);
+    }
+  }
+
+  return cleaned;
 }
 
 /**
