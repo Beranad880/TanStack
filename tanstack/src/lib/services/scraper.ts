@@ -6,8 +6,8 @@ import * as cheerio from 'cheerio'
  */
 function cleanHtmlText(html: string): string {
   // Extract hex colors from the raw HTML before stripping tags
-  const hexColors = html.match(/#[0-9a-fA-F]{6}\b/g) || [];
-  const uniqueColors = Array.from(new Set(hexColors)).slice(0, 20);
+  const hexColors = html.match(/#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b/g) || [];
+  const uniqueColors = Array.from(new Set(hexColors)).slice(0, 40);
 
   // Parse with Cheerio to extract structured metadata first
   const $ = cheerio.load(html);

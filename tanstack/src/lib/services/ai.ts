@@ -173,7 +173,7 @@ ${cleanedText}`;
       colorPalette: {
         type: "ARRAY",
         items: { type: "STRING" },
-        description: "List of 2-4 primary brand colors (hex codes, e.g. #000000) or 'not found'"
+        description: "List of 3-6 distinct primary and secondary brand colors (hex codes, e.g. #000000). Filter out pure white or plain grays unless they are key. Pick vibrant, prominent brand colors found in the system note."
       }
     },
     required: ["companyName", "description", "targetAudience", "valueProposition", "toneOfVoice", "colorPalette"]
