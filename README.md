@@ -1,6 +1,13 @@
 # 🌊 LagoonEdge: AI Ad Generator & Cloudflare Boilerplate
 
-*Vytvořeno pomocí nástroje **Antigravity CLI** a s využitím **Google AI Studio API Key**.*
+![TanStack](https://img.shields.io/badge/TanStack%20Start-black?style=for-the-badge&logo=react&logoColor=white)
+![Cloudflare](https://img.shields.io/badge/Cloudflare_Workers-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS_v4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Gemini](https://img.shields.io/badge/Google_Gemini-8E75B2?style=for-the-badge&logo=google&logoColor=white)
+![Drizzle](https://img.shields.io/badge/Drizzle_ORM-C5F74F?style=for-the-badge&logo=drizzle&logoColor=black)
+
+> [!NOTE]
+> *Vytvořeno pomocí nástroje **Antigravity CLI** a s využitím **Google AI Studio API Key**.*
 
 Moderní full-stack projekt postavený na technologii **TanStack Start** (React), optimalizovaný pro běh v ultra-rychlém a škálovatelném edge prostředí **Cloudflare Workers / Pages**. Projekt demonstruje stavbu komplexní AI aplikace – od scrapování cizích webů přes headless prohlížeč až po generování strukturovaného reklamního obsahu pomocí velkých jazykových modelů (LLM).
 
@@ -11,6 +18,7 @@ Vzhled a stylování zajišťuje **Tailwind CSS v4.0** s moderním designem, efe
 ## ✨ Hlavní aplikace: LagoonEdge AI Generátor (`/lagoonedge`)
 
 Jádrem projektu je komplexní nástroj na tvorbu reklamních kampaní na pár kliknutí.
+
 1. **Skenování webu (Puppeteer & Cheerio):** Zadáte URL adresu libovolné firmy. Aplikace na Cloudflaru spustí neviditelný Chrome prohlížeč, projde web, počká na načtení dynamického obsahu a vyextrahuje čistý text. Pro parsování dat a obrázků využívá robustní DOM parser `cheerio`.
 2. **Extrakce profilu značky (Google Gemini & Zod):** Ze získaného textu model *Gemini 2.5 Flash* sestaví "Brand Profile" (název, cílovka, tón komunikace, paleta barev). Výstup z AI je před zapsáním do databáze striktně kontrolován a validován pomocí knihovny `zod`.
 3. **Generování reklam (Google Gemini):** Na základě profilu značky AI vygeneruje 3 unikátní a chytlavé reklamní kreativy včetně nadpisů a výzev k akci (CTA). Každou kreativu si navíc v UI můžete libovolně upravit nebo nechat znovu přegenerovat.
@@ -27,11 +35,27 @@ Jádrem projektu je komplexní nástroj na tvorbu reklamních kampaní na pár k
   * `zod` pro validaci a vynucení JSON schémat z výstupů umělé inteligence
   * `cheerio` pro spolehlivé parsování HTML fallback struktury
 
+### 🏗️ Architektura aplikace
+
+```mermaid
+graph TD
+    Client[Webový prohlížeč] -->|HTTP/Zobrazení UI| CF[Cloudflare Workers / TanStack Start]
+    
+    subgraph Edge Computing
+        CF -->|SQL dotazy| D1[(Cloudflare D1 SQLite)]
+        CF -->|Ovládá přes WebSocket| Puppeteer[Cloudflare Browser Rendering]
+        CF -->|HTTP Request| Gemini[Google Gemini API]
+    end
+
+    Puppeteer -->|Scrapuje URL| TargetWeb[Cílová webová stránka]
+    Gemini -->|Vrací JSON s reklamami| CF
+```
+
 ---
 
 ## 📂 Adresářová struktura
 
-```
+```text
 tanstack/
 ├── drizzle/                # SQL migrační soubory vygenerované Drizzle Kit
 ├── src/                    # Zdrojový kód aplikace
@@ -48,10 +72,9 @@ tanstack/
 │   │   └── lagoonedge.tsx  # Hlavní aplikace pro generování reklam
 │   └── styles.css          # Globální CSS a CSS Proměnné (LagoonEdge Design System)
 ├── gemini-config.json      # Centralizovaná konfigurace pro Google Gemini LLM
-├── .dev.vars               # Tajné klíče pro lokální vývoj (nutno vytvořit)
 ├── package.json            # NPM závislosti, metadata a skripty
 ├── vite.config.ts          # Vite sestavení (pluginy React, Tailwind, Cloudflare)
-└── wrangler.jsonc          # Produkční konfigurace Cloudflare (bindings pro D1, Browser)
+└── wrangler.jsonc          # Produkční konfigurace Cloudflare
 ```
 
 ---
@@ -60,30 +83,42 @@ tanstack/
 
 Pro lokální běh projektu na vašem počítači postupujte podle následujících kroků:
 
+> [!WARNING]  
+> Ujistěte se, že máte nainstalovaný **Node.js (v22+)** a jste v adresáři `/tanstack`.
+
 ### 1. Přihlášení do Cloudflare a instalace
-Nejprve se přihlaste ke svému Cloudflare účtu (Miniflare potřebuje komunikovat s prostředky) a nainstalujte závislosti:
+
+Nejprve se přihlaste ke svému Cloudflare účtu (Miniflare potřebuje komunikovat s prostředky pro Browser Rendering a D1) a nainstalujte závislosti:
+
 ```bash
+cd tanstack
 npx wrangler login
 npm install
 ```
 
 ### 2. Vytvoření lokálního souboru s tajnými klíči (`.dev.vars`)
-Vytvořte soubor `.dev.vars` v kořenovém adresáři `/tanstack` a přidejte do něj svůj Google Gemini API klíč:
+
+Vytvořte soubor `.dev.vars` v adresáři `tanstack/` a přidejte do něj svůj Google Gemini API klíč:
+
 ```env
 GEMINI_API_KEY="vas-google-gemini-api-klic"
 ```
 
 ### 3. Příprava lokální databáze (Migrace)
+
 Převeďte definované schéma z kódu do SQL migrací a aplikujte je na lokální SQLite databázi:
+
 ```bash
 npm run db:generate
 npm run db:migrate:local
 ```
 
 ### 4. Spuštění serveru
+
 ```bash
 npm run dev
 ```
+
 Aplikace poběží na adrese [http://localhost:3000](http://localhost:3000).
 
 ---
@@ -91,26 +126,35 @@ Aplikace poběží na adrese [http://localhost:3000](http://localhost:3000).
 ## 🌐 Nasazení na Cloudflare (Produkce)
 
 ### 1. Vytvoření ostré D1 databáze
+
 Vytvořte novou databázi přes Wrangler CLI:
+
 ```bash
 npx wrangler d1 create my-binding-database
 ```
-Příkaz vám vygeneruje unikátní `database_id` (UUID). Otevřete `wrangler.jsonc` a nahraďte hodnotu `database_id`.
+
+Příkaz vám vygeneruje unikátní `database_id` (UUID). Otevřete `wrangler.jsonc` a nahraďte hodnotu `database_id` vaším novým klíčem.
 
 ### 2. Nahrání API klíče na Cloudflare
-Aby vaše aplikace mohla komunikovat s AI v produkci, nahrajte Gemini klíč na Cloudflare servery:
+
+Aby vaše aplikace mohla komunikovat s AI v produkci, nahrajte Gemini klíč na Cloudflare servery bezpečně přes secret:
+
 ```bash
 npx wrangler secret put GEMINI_API_KEY
 ```
 
 ### 3. Aplikace migrací v produkci
+
 Nahrajte schéma tabulek do ostré databáze:
+
 ```bash
 npm run db:migrate:prod
 ```
 
 ### 4. Nahrání aplikace (Deployment)
+
 Sestavte projekt a nahrajte jej na servery Cloudflaru:
+
 ```bash
 npm run deploy
 ```
@@ -123,6 +167,7 @@ npm run deploy
 | :--- | :--- | :--- |
 | `npm run dev` | `vite dev --port 3000` | Spustí lokální vývojový server |
 | `npm run build` | `vite build` | Sestaví produkční balíček (klient + server) |
+| `npm run preview` | `vite preview` | Náhled sestaveného produkčního balíčku lokálně |
 | `npm run deploy` | `npm run build && wrangler deploy` | Sestaví projekt a nahraje jej na Cloudflare |
 | `npm run db:generate` | `drizzle-kit generate` | Vytvoří SQL migrační soubory z kódu ve `schema.ts` |
 | `npm run db:migrate:local` | `wrangler d1 migrations apply ... --local` | Aplikuje SQL změny na lokální SQLite |
@@ -133,25 +178,28 @@ npm run deploy
 
 ## 📝 Poznámky k zadání (Snaprime Hiring Assignment)
 
-### Přístup a Architektura
-Tento úkol (vertical slice) jsem postavil na **TanStack Start** pro full-stack routing a React vrstvu v kombinaci s **Cloudflare Workers, Pages a D1**. Toto nastavení zajišťuje, že aplikace i databáze běží nativně na edge infrastruktuře, což splňuje požadavky na perzistenci, rychlost a reálnou nasaditelnost.
+> [!IMPORTANT]
+> **Přístup a Architektura:**
+> Tento úkol (vertical slice) byl postaven na **TanStack Start** pro full-stack routing a React vrstvu v kombinaci s **Cloudflare Workers, Pages a D1**. Toto nastavení zajišťuje, že aplikace i databáze běží nativně na edge infrastruktuře, což splňuje požadavky na perzistenci, rychlost a reálnou nasaditelnost.
 
-Pro hlavní úkol (extrakce a generování):
-1. **Extrakce**: Zaintegroval jsem Cloudflare Browser Rendering (`@cloudflare/puppeteer`) pro zpracování stránek vykreslovaných JavaScriptem (JS-rendered). Protože Puppeteer uvnitř edge workerů občas může narážet na timeouty nebo limity bezplatného tarifu, vytvořil jsem navíc explicitní **graceful fallback** (záložní řešení) využívající standardní `fetch` + `cheerio`. Díky tomu, i když headless prohlížeč selže, pipeline nespadne, ale elegantně se přepne a pokusí se alespoň naparsovat surová HTML metadata a OpenGraph obrázky.
-2. **AI vrstva**: Vybral jsem **Google Gemini API** pro jeho rychlost a nativní schopnost generovat JSON schémata přímo přes standardní HTTP požadavky. To mi umožnilo striktně typovat odpovědi LLM (za použití validátoru `zod`) bez nutnosti spoléhat na těžkopádné knihovny. Přidal jsem striktní kontrolu: pokud LLM nedokáže na stránce data najít, dosadí "not found". Naše pipeline to pak explicitně zachytí a raději generování přeruší, než aby si vymýšlela fakta nebo produkovala nesmyslné reklamy.
-3. **Perzistence a Náhledy**: Reklamy a profily značek se trvale ukládají do Cloudflare D1 přes Drizzle ORM. Úpravy reklam a generování jednotlivých reklamních konceptů fungují jako přímé úpravy konkrétních řádků (Row updates) ve SQLite databázi (`saveAdEditFn` a `regenerateAdFn`). To zaručuje, že úprava jedné reklamy a přegenerování druhé si navzájem nikdy nepřepíší stav.
+### Implementační detaily k hlavnímu úkolu (Extrakce & Generování)
 
-### Co bylo záměrně odloženo (a proč)
-Vzhledem k rozpočtu zhruba 5-6 hodin jsem upřednostnil vytvoření kompletní, plně funkční pipeline (Scrape -> Extract -> DB -> UI -> Edit/Regenerate). U následujících bodů jsem udělal vědomé kompromisy:
-* **Deduplikace obrázků a pokročilé filtrování:** V tuto chvíli vybíráme kandidátské obrázky podle základních CSS parametrů a minimální velikosti (pro odfiltrování ikon a prvků UI) a limitujeme je na 10 kusů. Pokročilá deduplikace nebo vektorové vyhodnocování relevance byly vynechány, protože základní heuristické filtrování bohatě stačí k prokázání, že jádro aplikace (core loop) funguje.
-* **Precizní extrakce barev značky:** Pro vyhledání barevných kódů (hex) jsem použil jednoduchý regulární výraz na zdrojový HTML kód stránky, který pak předávám LLM jako kontext. Získávat *skutečné* vypočítané CSS proměnné přímo přes Puppeteer by bylo sice přesnější, ale zbytečně časově náročné kvůli procházení různorodých DOM stromů. AI navíc z nabídky hex kódů dokáže vybrat barvy překvapivě dobře.
-* **Autentizace / Uživatelské účty:** Není součástí řešení. Místo toho databáze pro udržení relace spoléhá na automaticky generovaná unikátní ID (`siteId`), která se drží v URL.
-* **Komplexní ukládání do cache (LLM Caching):** Přestože D1 ukládá výsledné reklamy, mezikroky samotné extrakce LLM u opakujících se URL adres necachuji. Vynechal jsem to, protože hlavním cílem bylo prokázat, že generovací pipeline funguje, nikoliv optimalizovat náklady na API za duplicitní dotazy.
+1. **Extrakce:** Zaintegrován **Cloudflare Browser Rendering** (`@cloudflare/puppeteer`) pro zpracování stránek vykreslovaných JavaScriptem. Kvůli možným timeoutům v edge workerech byl vytvořen i **graceful fallback** využívající standardní `fetch` + `cheerio`. Pokud headless prohlížeč selže, pipeline nespadne a spolehlivě naparsuje základní HTML metadata.
+2. **AI vrstva:** Použito **Google Gemini API** (`gemini-2.5-flash`), které vyniká nativní podporou "Structured Outputs" (generování JSON schémat přes HTTP) bez externích závislostí. Pomocí `zod` je garantována validace. Je nastavena bezpečnostní pojistka: pokud LLM obsah nenajde, vrátí `not found` a generování se bezpečně přeruší (zamezení halucinacím).
+3. **Perzistence a Náhledy:** Reklamy a profily jsou ukládány do **Cloudflare D1** přes **Drizzle ORM**. Editace a znovugenerování reklam jsou řešeny jako *Row updates* v SQLite, což předchází konfliktům a přepisům.
 
-### Jak byl při vývoji využit AI Agent
-* **Jakého agenta jsem použil:** Používal jsem pokročilého autonomního programovacího IDE asistenta (Antigravity).
-* **V čem mi pomohl:** Agent byl naprosto klíčový při sestavování struktury pro Drizzle schéma, propojení databáze D1 se serverovými funkcemi v TanStack Start a při generování složitého boilerplate kódu pro Cloudflare Puppeteer. Také hodně pomohl s refaktoringem uživatelského rozhraní, aby používalo čistý a moderní design systém.
-* **Kde udělal chybu a jak se to muselo opravit:** 
-  1. Agent zpočátku bojoval s rozdílem mezi proměnnými prostředí (`env`) v Cloudflare Workerech a běžným Node.js `process.env`. Protože TanStack Start pracuje s objektem `env` v edge funkcích trochu jinak, musel jsem ho explicitně instruovat, aby proměnné `env` předával přímo ze serverových funkcí a nespoléhal na globální `process`.
-  2. Jazykový model (Gemini API) si na začátku začal vymýšlet (halucinovat) odpovědi u stránek, kde chyběl potřebný obsah. S agentem jsem musel poladit system prompt a zavést striktní Zod schéma, které model nutí odpovědět `"not found"`. Následně jsme museli napsat bezpečnostní pojistku (pipeline guard), která celý proces zruší, pokud na nás vyskočí hodnota `"not found"`.
-  3. Kvůli mému trochu nepřesnému zadání, aby se "všechno v aplikaci přepsalo na Gemini 3.5 Flash", agent omylem přepsal i název modelu ve vnitřním API volání. Jelikož verze `gemini-3.5-flash` na backendu Googlu zatím neexistuje, začalo API padat (hlásilo chyby 404/503). Agenta jsem pak musel navést, aby na backendu vrátil stabilní verzi `gemini-2.5-flash`, zatímco v uživatelském rozhraní (UI) nechal nápisy na "3.5", jak jsem původně chtěl.
+### ⚖️ Co bylo záměrně odloženo a zjednodušeno
+
+Vzhledem k rozpočtu zhruba 5-6 hodin jsem upřednostnil vytvoření kompletní, plně funkční pipeline *(Scrape -> Extract -> DB -> UI -> Edit/Regenerate)*. Z toho důvodu:
+* **Deduplikace obrázků:** Obrázky se filtrují heuristicky podle minimální velikosti (vynechání ikon), bez využití vektorové podobnosti.
+* **Přesná extrakce barev:** Barvy jsou tahány přes RegEx z HTML namísto složitého dotazování computed CSS přes Puppeteer (vyžaduje zbytečně hodně prostředků a AI barvy trefuje velmi dobře i tak).
+* **Uživatelské účty:** Identifikace relací probíhá automaticky skrz unikátní `siteId` v URL parametrech (žádný login).
+* **LLM Caching:** Databáze sice cachuje vygenerované výsledky, ale mezikroky samotné LLM extrakce (při opakovaném testu stejné URL) zjednodušeně necachujeme z důvodu omezeného času.
+
+### 🤖 Využití AI Agenta
+* **Agent:** Použit autonomní programovací asistent **Antigravity**.
+* **Přínos:** Zásadní pomoc při konfiguraci Drizzle na Cloudflare D1 v TanStack Start prostředí. Efektivní generování boilerplate kódu pro Puppeteer v edge workeru.
+* **Výzvy (a řešení):**
+  1. *Rozdíl `process.env` vs Cloudflare `env`:* Agent zpočátku padal do pasti Node.js env proměnných. Musel se nasměrovat na bindování `env` z TanStack kontextu.
+  2. *Halucinace AI:* Model se pokoušel vymýšlet data při nedostatku obsahu na URL. Zavedli jsme přísné Zod validace a `not found` pojistku v system promptu.
+  3. *Verzování Modelu:* Snaha "přepsat vše na 3.5" narazila na limity API, agent vrátil stabilní `gemini-2.5-flash` a zachoval štítky 3.5 čistě v rámci UI.
