@@ -16,7 +16,7 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'Ahoj světe!',
+        title: 'LagoonEdge',
       },
     ],
     links: [
@@ -27,6 +27,14 @@ export const Route = createRootRoute({
     ],
   }),
   shellComponent: RootDocument,
+  notFoundComponent: () => (
+    <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center">
+      <h1 className="text-4xl font-extrabold text-[var(--sea-ink)] mb-4">404</h1>
+      <p className="text-xl text-[var(--sea-ink-soft)]">
+        Tato stránka neexistuje.
+      </p>
+    </div>
+  ),
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
@@ -36,7 +44,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />
       </head>
-      <body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-neutral-200 dark:selection:bg-neutral-800">
+      <body suppressHydrationWarning className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-neutral-200 dark:selection:bg-neutral-800">
         {children}
         <Scripts />
       </body>

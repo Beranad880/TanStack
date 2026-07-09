@@ -222,10 +222,11 @@ export async function generateAds(
 Evaluate the quality and depth of the provided brand profile. Based on how detailed and rich the information is, generate between 1 and ${count} diverse, high-performing ads. If the profile is very basic or lacks detail, generate only 1 or 2 ads. If it is rich, generate up to ${count} ads.
 All generated content MUST be in Czech language (čeština).
 
-CRITICAL RULES FOR DIVERSITY:
+CRITICAL RULES FOR DIVERSITY AND RELEVANCE:
 1. Every single ad MUST have a COMPLETELY UNIQUE primary text, headline, and description. DO NOT repeat the same phrases or sentences. All text must be in Czech.
 2. Every single ad MUST use a DIFFERENT imageUrl. You must select different images from the Candidate Images list. DO NOT use the same imageUrl twice.
 3. If there are not enough images, you can use null, but try your best to use unique images.
+4. The generated ad text (primaryText, headline, description) MUST be highly relevant to the visual content or context of the specific image (imageUrl) you choose for that ad. Align the creative idea and copy with what the selected image likely represents.
 
 Brand Profile:
 Company Name: ${brandProfile.companyName}

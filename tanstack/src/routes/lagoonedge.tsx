@@ -171,7 +171,7 @@ const saveAdEditFn = createServerFn({ method: 'POST' })
 
 // 4. Regenerate a single ad concept using Gemini
 const regenerateAdFn = createServerFn({ method: 'POST' })
-  .validator((data: { siteId: string; adId: string }) => data)
+  .validator((data: { siteId: string; adId: string; preferredImageUrl?: string; currentImageUrl?: string }) => data)
   .handler(async ({ data }) => {
     try {
       const db = await getDb()
@@ -188,7 +188,18 @@ const regenerateAdFn = createServerFn({ method: 'POST' })
       }
 
       const profile = profileList[0]
-      const candidateImages: string[] = profile.candidateImages
+      let candidateImages: string[] = profile.candidateImages || []
+
+      if (data.preferredImageUrl) {
+        // Zvolil konkrétní obrázek - pošleme AI jen ten, aby o něm psalo
+        candidateImages = [data.preferredImageUrl]
+      } else if (data.currentImageUrl) {
+        // Obyčejný refresh - vyfiltrujeme aktuální obrázek, abychom AI přinutili použít jiný
+        const filtered = candidateImages.filter(img => img !== data.currentImageUrl)
+        if (filtered.length > 0) {
+          candidateImages = filtered
+        }
+      }
 
       // Call Gemini to generate exactly 1 ad
       const generatedAds = await generateAds(
@@ -429,16 +440,21 @@ function LagoonedgeComponent() {
   }
 
   // Regenerate a single Ad concept
-  const handleRegenerateAd = async (adId: string) => {
+  const handleRegenerateAd = async (adId: string, currentImageUrl: string | null) => {
     if (!siteId) return
     if (!confirm('Opravdu chcete tuto reklamu kompletně přepsat novým AI konceptem? Vaše ruční úpravy u této karty budou přepsány.')) return
 
     setRegeneratingAdId(adId)
     try {
+      const isAdEditing = editingAdId === adId;
+      const preferredImageUrl = isAdEditing && editFields?.imageUrl ? editFields.imageUrl : undefined;
+
       await regenerateAdFn({
         data: {
           siteId,
-          adId
+          adId,
+          preferredImageUrl,
+          currentImageUrl: currentImageUrl || undefined
         }
       })
       // Clear edits if regenerating the active one
@@ -800,6 +816,7 @@ function LagoonedgeComponent() {
 
                   // Find chosen image index
                   const activeImgUrl = isAdEditing ? editFields?.imageUrl : ad.imageUrl
+                  const isValidImage = typeof activeImgUrl === 'string' && activeImgUrl.trim() !== '' && activeImgUrl !== 'not found' && activeImgUrl !== 'null' && activeImgUrl !== 'undefined'
 
                   return (
                     <div 
@@ -830,7 +847,7 @@ function LagoonedgeComponent() {
                             </span>
                           )}
                           <button
-                            onClick={() => handleRegenerateAd(ad.id)}
+                            onClick={() => handleRegenerateAd(ad.id, ad.imageUrl)}
                             title="Regenerovat AI"
                             disabled={isAdRegenerating || isAdSaving}
                             className="p-1.5 rounded-lg border border-[var(--line)] bg-[var(--surface)] hover:bg-neutral-200 text-[var(--sea-ink-soft)] hover:text-[var(--sea-ink)]"
@@ -844,91 +861,89 @@ function LagoonedgeComponent() {
                       <div className="border border-[var(--line)] rounded-2xl overflow-hidden bg-white dark:bg-[#18191A] mb-4 text-left shadow-sm flex flex-col">
                         
                         {/* Header: Avatar + Domain text */}
-                        <div className="flex items-center gap-2 p-3 pb-2">
+                        <div className="flex items-center gap-3 p-4 pb-3">
                           <img 
                             src={`https://s2.googleusercontent.com/s2/favicons?domain=${selected.site.url.replace(/^https?:\/\/(www\.)?/i, '').split('/')[0]}&sz=128`}
                             alt="Logo"
-                            className="h-8 w-8 rounded-full shadow-sm shrink-0 object-cover border border-[var(--line)] bg-white"
+                            className="h-10 w-10 rounded-full shadow-sm shrink-0 object-cover border border-[var(--line)] bg-white"
                           />
                           <div className="flex flex-col">
-                            <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100 hover:underline cursor-pointer">
+                            <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100 hover:underline cursor-pointer">
                               {selected.brandProfile.companyName !== 'not found' ? selected.brandProfile.companyName : selected.site.url.replace(/^https?:\/\/(www\.)?/i, '')}
                             </span>
-                            <span className="text-[10px] text-neutral-500 font-medium">Sponzorováno • {selected.site.url.replace(/^https?:\/\/(www\.)?/i, '')}</span>
+                            <span className="text-xs text-neutral-500 font-medium">Sponzorováno • {selected.site.url.replace(/^https?:\/\/(www\.)?/i, '')}</span>
                           </div>
                         </div>
 
                         {/* Primary text */}
-                        <div className="px-3 pb-3">
+                        <div className="px-4 pb-4">
                         {isAdEditing ? (
-                          <textarea
-                            value={editFields?.primaryText || ''}
-                            onChange={(e) => handleFieldChange('primaryText', e.target.value)}
-                            className="w-full text-[13px] text-neutral-800 dark:text-neutral-200 leading-snug bg-blue-50/40 dark:bg-blue-900/10 focus:bg-white dark:focus:bg-[#18191A] border border-blue-300 dark:border-blue-700 focus:border-[var(--sea-ink)] rounded-lg p-2.5 resize-none transition-all outline-none shadow-inner"
-                            rows={3}
-                            placeholder="Hlavní text reklamy..."
-                          />
+                          <div className="flex flex-col gap-3">
+                            <textarea
+                              value={editFields?.primaryText || ''}
+                              onChange={(e) => handleFieldChange('primaryText', e.target.value)}
+                              className="w-full text-[14px] text-neutral-800 dark:text-neutral-200 leading-relaxed bg-blue-50/40 dark:bg-blue-900/10 focus:bg-white dark:focus:bg-[#18191A] border border-blue-300 dark:border-blue-700 focus:border-[var(--sea-ink)] rounded-xl p-3.5 resize-none transition-all outline-none shadow-inner"
+                              rows={4}
+                              placeholder="Hlavní text reklamy..."
+                            />
+                            {candidateImages.length > 0 && (
+                              <div>
+                                <label className="text-[11px] font-bold text-[var(--sea-ink-soft)] uppercase tracking-wider block mb-1.5 ml-1">
+                                  Obrázek reklamy
+                                </label>
+                                <select
+                                  value={editFields?.imageUrl || ''}
+                                  onChange={(e) => handleFieldChange('imageUrl', e.target.value || null)}
+                                  className="w-full bg-white dark:bg-neutral-800 border border-[var(--line)] text-neutral-900 dark:text-neutral-100 text-[13px] font-medium py-2 px-3 rounded-lg shadow-sm outline-none focus:border-[var(--sea-ink)] cursor-pointer"
+                                >
+                                  <option value="">Bez obrázku</option>
+                                  {candidateImages.map((img, i) => (
+                                    <option key={i} value={img}>Obrázek {i + 1}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
+                          </div>
                         ) : (
-                          <p className="text-[13px] text-neutral-800 dark:text-neutral-200 leading-snug">
+                          <p className="text-[14px] text-neutral-800 dark:text-neutral-200 leading-relaxed">
                             {ad.primaryText}
                           </p>
                         )}
                         </div>
 
                         {/* Image Preview Box */}
-                        {((activeImgUrl && activeImgUrl !== 'not found') || isAdEditing) && (
-                        <div className="relative aspect-video bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center overflow-hidden group border-t border-[var(--line)]">
-                          {activeImgUrl && activeImgUrl !== 'not found' ? (
+                        {isValidImage && (
+                          <div className="relative aspect-video bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center overflow-hidden border-t border-[var(--line)]">
                             <img src={activeImgUrl} alt="Ad creative" className="h-full w-full object-cover" />
-                          ) : (
-                            <div className="text-[10px] text-neutral-400 italic">Obrázek chybí (Přidejte kliknutím)</div>
-                          )}
-                          
-                          {/* Image selector dropdown floating when editing */}
-                          {isAdEditing && candidateImages.length > 0 && (
-                            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                              <span className="text-white text-[10px] font-bold uppercase tracking-wider mb-2">Změnit obrázek</span>
-                              <select
-                                value={editFields?.imageUrl || ''}
-                                onChange={(e) => handleFieldChange('imageUrl', e.target.value || null)}
-                                className="bg-white text-neutral-900 text-xs font-bold p-2 px-3 rounded-lg shadow-xl border-none outline-none w-[80%] max-w-[200px] cursor-pointer"
-                              >
-                                <option value="">Bez obrázku</option>
-                                {candidateImages.map((img, i) => (
-                                  <option key={i} value={img}>Obrázek {i + 1}</option>
-                                ))}
-                              </select>
-                            </div>
-                          )}
-                        </div>
+                          </div>
                         )}
 
                         {/* Bottom Headline & Call To Action block */}
-                        <div className="bg-neutral-50 dark:bg-[#242526] p-3 flex justify-between items-center gap-3 border-t border-[var(--line)]">
+                        <div className="bg-neutral-50 dark:bg-[#242526] p-4 flex justify-between items-center gap-4 border-t border-[var(--line)]">
                           <div className="flex-1 min-w-0 flex flex-col justify-center">
                             {isAdEditing ? (
-                              <div className="flex flex-col gap-1.5">
+                              <div className="flex flex-col gap-2">
                                 <input
                                   type="text"
                                   value={editFields?.headline || ''}
                                   onChange={(e) => handleFieldChange('headline', e.target.value)}
-                                  className="font-bold text-[13px] text-neutral-900 dark:text-neutral-100 leading-tight bg-blue-50/40 dark:bg-blue-900/10 focus:bg-white dark:focus:bg-[#18191A] border border-blue-300 dark:border-blue-700 focus:border-[var(--sea-ink)] rounded-md px-2 py-1 outline-none w-full shadow-inner transition-colors"
+                                  className="font-bold text-[15px] text-neutral-900 dark:text-neutral-100 leading-tight bg-blue-50/40 dark:bg-blue-900/10 focus:bg-white dark:focus:bg-[#18191A] border border-blue-300 dark:border-blue-700 focus:border-[var(--sea-ink)] rounded-lg px-3 py-2 outline-none w-full shadow-inner transition-colors"
                                   placeholder="Titulek"
                                 />
                                 <input
                                   type="text"
                                   value={editFields?.description || ''}
                                   onChange={(e) => handleFieldChange('description', e.target.value)}
-                                  className="text-[11px] text-neutral-600 dark:text-neutral-400 bg-blue-50/40 dark:bg-blue-900/10 focus:bg-white dark:focus:bg-[#18191A] border border-blue-300 dark:border-blue-700 focus:border-[var(--sea-ink)] rounded-md px-2 py-1 outline-none w-full shadow-inner transition-colors"
+                                  className="text-[13px] text-neutral-600 dark:text-neutral-400 bg-blue-50/40 dark:bg-blue-900/10 focus:bg-white dark:focus:bg-[#18191A] border border-blue-300 dark:border-blue-700 focus:border-[var(--sea-ink)] rounded-lg px-3 py-2 outline-none w-full shadow-inner transition-colors"
                                   placeholder="Popis (Tagline)"
                                 />
                               </div>
                             ) : (
                               <>
-                                <h4 className="font-bold text-[13px] text-neutral-900 dark:text-neutral-100 leading-tight truncate">
+                                <h4 className="font-bold text-[15px] text-neutral-900 dark:text-neutral-100 leading-tight truncate">
                                   {ad.headline}
                                 </h4>
-                                <p className="text-[11px] text-neutral-500 truncate mt-0.5">
+                                <p className="text-[13px] text-neutral-500 truncate mt-1">
                                   {ad.description}
                                 </p>
                               </>
@@ -941,11 +956,11 @@ function LagoonedgeComponent() {
                                 type="text"
                                 value={editFields?.cta || ''}
                                 onChange={(e) => handleFieldChange('cta', e.target.value)}
-                                className="bg-blue-50/40 dark:bg-blue-900/10 focus:bg-white dark:focus:bg-[#18191A] border border-blue-300 dark:border-blue-700 focus:border-[var(--sea-ink)] rounded-lg px-2 py-1.5 text-center text-[11px] font-bold text-neutral-900 dark:text-neutral-100 w-24 outline-none shadow-inner transition-colors"
+                                className="bg-blue-50/40 dark:bg-blue-900/10 focus:bg-white dark:focus:bg-[#18191A] border border-blue-300 dark:border-blue-700 focus:border-[var(--sea-ink)] rounded-lg px-3 py-2.5 text-center text-[13px] font-bold text-neutral-900 dark:text-neutral-100 w-28 outline-none shadow-inner transition-colors"
                                 placeholder="Tlačítko"
                               />
                             ) : (
-                              <div className="bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600 transition-colors text-[11px] font-bold text-neutral-900 dark:text-neutral-100 px-4 py-2 rounded-lg select-none cursor-pointer">
+                              <div className="bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600 transition-colors text-[13px] font-bold text-neutral-900 dark:text-neutral-100 px-5 py-2.5 rounded-lg select-none cursor-pointer">
                                 {ad.cta}
                               </div>
                             )}
@@ -963,8 +978,19 @@ function LagoonedgeComponent() {
                       )}
 
                       {/* Card Action Buttons (Edit, Save, Cancel) */}
-                      <div className="mt-auto pt-3 flex gap-2 w-full">
-                        {isAdEditing ? (
+                      <div className="mt-auto pt-3 flex flex-col gap-3 w-full">
+                        {isAdEditing && editFields?.imageUrl && editFields.imageUrl !== ad.imageUrl && (
+                          <button
+                            onClick={() => handleRegenerateAd(ad.id, editFields.imageUrl)}
+                            disabled={isAdRegenerating}
+                            className="w-full bg-[var(--ocean)] hover:bg-[var(--ocean-deep)] text-white text-sm font-bold py-3 rounded-xl flex justify-center items-center gap-2 transition-colors shadow-sm"
+                          >
+                            <Sparkles className="h-4 w-4" />
+                            Přegenerovat texty podle nové fotky
+                          </button>
+                        )}
+                        <div className="flex gap-2 w-full">
+                          {isAdEditing ? (
                           <>
                             <button
                               onClick={() => handleSaveAd(ad.id)}
@@ -1000,7 +1026,7 @@ function LagoonedgeComponent() {
                           </button>
                         )}
                       </div>
-
+                      </div>
                     </div>
                   )
                 })}
