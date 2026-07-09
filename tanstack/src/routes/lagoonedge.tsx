@@ -375,17 +375,17 @@ function LagoonedgeComponent() {
     if (!inputUrl.trim()) return
 
     setErrorMsg('')
-    setLoadingStep('🔍 Krok 1/3: Stahování a renderování webu přes Puppeteer...')
+    setLoadingStep('Krok 1/3: Stahování a renderování webu...')
 
     startTransition(async () => {
       try {
         // Step 1: Set step timer simulator
         const stepTimer = setTimeout(() => {
-          setLoadingStep('🧠 Krok 2/3: Extrakce brand profilu přes Google Gemini...')
+          setLoadingStep('Krok 2/3: Extrakce brand profilu...')
         }, 5500)
         
         const stepTimer2 = setTimeout(() => {
-          setLoadingStep('✍️ Krok 3/3: Generování a přizpůsobení 3 reklamních kreativ...')
+          setLoadingStep('Krok 3/3: Generování a přizpůsobení 3 reklamních kreativ...')
         }, 11000)
 
         const result = await generateLagoonedgeAdsFn({ data: inputUrl })
@@ -675,7 +675,6 @@ function LagoonedgeComponent() {
               <div className="mt-8 p-4 rounded-xl border border-[var(--line)] bg-[var(--foam)] text-xs text-center rise-in flex flex-col gap-2 items-center">
                 <Loader2 className="h-5 w-5 animate-spin text-[var(--sea-ink-soft)]" />
                 <span className="font-semibold text-[var(--sea-ink-soft)]">{loadingStep}</span>
-                <span className="text-[10px] text-neutral-400">Tento proces trvá přibližně 10-15 sekund kvůli spouštění prohlížeče Chrome na serveru.</span>
               </div>
             )}
           </div>
