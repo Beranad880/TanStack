@@ -243,46 +243,6 @@ const regenerateAdFn = createServerFn({ method: 'POST' })
     }
   })
 
-// 5. Delete a site and its ads / brand profile
-const deleteLagoonedgeSiteFn = createServerFn({ method: 'POST' })
-  .validator((siteId: string) => siteId)
-  .handler(async ({ data: siteId }) => {
-    try {
-      const db = await getDb()
-      
-      // Explicitly delete children first (SQLite doesn't always cascade by default without PRAGMA foreign_keys = ON)
-      await db.delete(ads).where(eq(ads.siteId, siteId))
-      await db.delete(brandProfiles).where(eq(brandProfiles.siteId, siteId))
-      
-      // Finally delete the site itself
-      await db.delete(sites).where(eq(sites.id, siteId))
-
-      return { success: true }
-    } catch (error: any) {
-      console.error('deleteLagoonedgeSiteFn failed:', error.message)
-      throw new Error(`Smazání selhalo: ${error.message}`)
-    }
-  })
-
-// 6. Delete ALL sites and their ads / brand profiles
-const deleteAllLagoonedgeSitesFn = createServerFn({ method: 'POST' })
-  .handler(async () => {
-    try {
-      const db = await getDb()
-      
-      // Delete children first
-      await db.delete(ads)
-      await db.delete(brandProfiles)
-      
-      // Finally delete all sites
-      await db.delete(sites)
-
-      return { success: true }
-    } catch (error: any) {
-      console.error('deleteAllLagoonedgeSitesFn failed:', error.message)
-      throw new Error(`Smazání všeho selhalo: ${error.message}`)
-    }
-  })
 
 // --- ROUTE DEFINITION ---
 
@@ -327,47 +287,6 @@ function LagoonedgeComponent() {
   const [savingAdId, setSavingAdId] = useState<string | null>(null)
   const [regeneratingAdId, setRegeneratingAdId] = useState<string | null>(null)
   const [saveSuccessAdId, setSaveSuccessAdId] = useState<string | null>(null)
-
-  // Handle deleting a campaign
-  const handleDeleteSite = async (e: React.MouseEvent, id: string) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (!confirm('Opravdu chcete tuto reklamní kampaň kompletně smazat?')) return
-
-    try {
-      await deleteLagoonedgeSiteFn({ data: id })
-      
-      // If we are currently viewing the deleted site, reset URL parameter
-      if (siteId === id) {
-        router.navigate({
-          to: '/lagoonedge',
-          search: { siteId: undefined }
-        })
-      } else {
-        router.invalidate() // Refresh data (reload history list)
-      }
-    } catch (err: any) {
-      alert(`Chyba při mazání: ${err.message}`)
-    }
-  }
-
-  // Handle deleting ALL campaigns
-  const handleDeleteAllSites = async (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (!confirm('VAROVÁNÍ: Opravdu chcete smazat VŠECHNY uložené kampaně? Tuto akci nelze vrátit.')) return
-
-    try {
-      await deleteAllLagoonedgeSitesFn()
-      
-      router.navigate({
-        to: '/lagoonedge',
-        search: { siteId: undefined }
-      })
-    } catch (err: any) {
-      alert(`Chyba při mazání všeho: ${err.message}`)
-    }
-  }
 
   // Start generation pipeline
   const handleGenerate = (e: React.FormEvent) => {
@@ -534,15 +453,7 @@ function LagoonedgeComponent() {
               <span>Historie kampaní</span>
             </h2>
             <div className="flex items-center gap-2">
-              {history.length > 0 && (
-                <button
-                  onClick={handleDeleteAllSites}
-                  className="whitespace-nowrap text-[10px] font-bold text-red-600 hover:text-red-700 no-underline px-2 py-1 rounded-md border border-red-200 bg-red-50 hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/30 dark:hover:bg-red-900/50"
-                  title="Smazat všechny kampaně"
-                >
-                  Smazat vše
-                </button>
-              )}
+
               <Link
                 to="/lagoonedge"
                 search={{ siteId: undefined }}
@@ -596,14 +507,6 @@ function LagoonedgeComponent() {
                         {formattedDate}
                       </span>
                     </div>
-
-                    <button
-                      onClick={(e) => handleDeleteSite(e, item.id)}
-                      title="Odstranit kampaň"
-                      className="p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-red-100/60 dark:hover:bg-red-950/40 text-neutral-400 hover:text-red-600 transition-all shrink-0 cursor-pointer"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
                   </Link>
                 )
               })
