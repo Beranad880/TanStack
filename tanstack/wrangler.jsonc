@@ -22,8 +22,8 @@
   "d1_databases": [
     {
       "binding": "MY_BINDING",
-      "database_name": "my-binding-database",
-      "database_id": "d6515669-8c8d-4d97-9f6b-960007c1196a",
+      "database_name": "my-binding",
+      "database_id": "a3693b1e-a5e4-49e5-93af-f780317f64d4",
       "migrations_dir": "drizzle"
     }
   ],
