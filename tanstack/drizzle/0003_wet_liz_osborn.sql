@@ -1,0 +1,1 @@
+ALTER TABLE `sites` ADD `session_id` text;

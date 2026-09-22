@@ -16,8 +16,8 @@
     "check": "prettier --check .",
     "deploy": "npm run build && wrangler deploy",
     "db:generate": "drizzle-kit generate",
-    "db:migrate:local": "wrangler d1 migrations apply my-binding-database --local",
-    "db:migrate:prod": "wrangler d1 migrations apply my-binding-database --remote"
+    "db:migrate:local": "wrangler d1 migrations apply my-binding --local",
+    "db:migrate:prod": "wrangler d1 migrations apply my-binding --remote"
   },
   "dependencies": {
     "@cloudflare/puppeteer": "^1.1.0",

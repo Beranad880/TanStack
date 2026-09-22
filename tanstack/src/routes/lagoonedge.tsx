@@ -3,40 +3,43 @@ import { createServerFn } from '@tanstack/react-start'
 import { useState, useTransition } from 'react'
 import { getDb } from '../db/index'
 import { sites, brandProfiles, ads } from '../db/schema'
-import { desc, eq } from 'drizzle-orm'
+import { desc, eq, and } from 'drizzle-orm'
 import { runAdGenerationPipeline } from '../lib/services/pipeline'
 import { generateAds } from '../lib/services/ai'
+import { getOrCreateSessionId } from '../lib/session'
 // @ts-ignore - cloudflare:workers je virtuální modul poskytovaný Vite pluginem
 import { env } from 'cloudflare:workers'
 import { 
-  ArrowRight, Loader2, Sparkles, 
+  Loader2, Sparkles, 
   Save, Check, Globe, Eye, RefreshCw, X, Clock, Edit2, Zap, Menu 
 } from 'lucide-react'
 
 // --- SERVER FUNCTIONS ---
 
-// 1. Load data helper (history + selected site metadata)
+// 1. Load data helper (user's history + selected site metadata isolated by session)
 const getLagoonedgeDataFn = createServerFn({ method: 'GET' })
   .validator((siteId?: string) => siteId)
   .handler(async ({ data: siteId }) => {
     try {
+      const sessionId = await getOrCreateSessionId()
       const db = await getDb()
       
-      // Load all sites for history sidebar
+      // Load only sites for current user session (isolated, not global)
       const historyList = await db
         .select()
         .from(sites)
+        .where(eq(sites.sessionId, sessionId))
         .orderBy(desc(sites.createdAt))
-        .limit(10)
+        .limit(20)
 
       let selectedData = null
 
       if (siteId) {
-        // Load specific site
+        // Load specific site only if it belongs to the current user's session
         const selectedSite = await db
           .select()
           .from(sites)
-          .where(eq(sites.id, siteId))
+          .where(and(eq(sites.id, siteId), eq(sites.sessionId, sessionId)))
           .limit(1)
 
         if (selectedSite[0]) {
@@ -82,6 +85,7 @@ const generateLagoonedgeAdsFn = createServerFn({ method: 'POST' })
     }
 
     try {
+      const sessionId = await getOrCreateSessionId()
       const db = await getDb()
       
       // Run the pipeline
@@ -90,10 +94,11 @@ const generateLagoonedgeAdsFn = createServerFn({ method: 'POST' })
       const siteId = crypto.randomUUID()
       const profileId = crypto.randomUUID()
 
-      // Insert Site record
+      // Insert Site record with sessionId to link campaign to user
       await db.insert(sites).values({
         id: siteId,
         url: sanitizedUrl,
+        sessionId,
         latencyMs: pipelineResult.latencyMs,
         costUsd: pipelineResult.costUsd,
         createdAt: new Date().toISOString()
@@ -148,7 +153,29 @@ const saveAdEditFn = createServerFn({ method: 'POST' })
   }) => data)
   .handler(async ({ data }) => {
     try {
+      const sessionId = await getOrCreateSessionId()
       const db = await getDb()
+
+      // Check ownership: ad belongs to a site created by this session
+      const adRecord = await db
+        .select({ siteId: ads.siteId })
+        .from(ads)
+        .where(eq(ads.id, data.adId))
+        .limit(1)
+
+      if (!adRecord[0]) {
+        throw new Error('Reklama nenalezena')
+      }
+
+      const siteRecord = await db
+        .select({ id: sites.id })
+        .from(sites)
+        .where(and(eq(sites.id, adRecord[0].siteId), eq(sites.sessionId, sessionId)))
+        .limit(1)
+
+      if (!siteRecord[0]) {
+        throw new Error('Nemáte oprávnění upravovat tuto kampaň')
+      }
       
       await db
         .update(ads)
@@ -174,7 +201,19 @@ const regenerateAdFn = createServerFn({ method: 'POST' })
   .validator((data: { siteId: string; adId: string; preferredImageUrl?: string; currentImageUrl?: string }) => data)
   .handler(async ({ data }) => {
     try {
+      const sessionId = await getOrCreateSessionId()
       const db = await getDb()
+
+      // Verify site ownership
+      const siteRecord = await db
+        .select({ id: sites.id })
+        .from(sites)
+        .where(and(eq(sites.id, data.siteId), eq(sites.sessionId, sessionId)))
+        .limit(1)
+
+      if (!siteRecord[0]) {
+        throw new Error('Nemáte oprávnění pro tuto kampaň')
+      }
       
       // Load Brand Profile
       const profileList = await db
@@ -420,7 +459,7 @@ function LagoonedgeComponent() {
           <button 
             onClick={() => setIsHistoryOpen(true)}
             className="p-1.5 -ml-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
-            title="Historie kampaní"
+            title="Moje kampaně"
           >
             <Menu className="h-5 w-5" />
           </button>
@@ -441,7 +480,7 @@ function LagoonedgeComponent() {
           />
         )}
 
-        {/* SLIDE-OUT SIDEBAR: History of Campaigns */}
+        {/* SLIDE-OUT SIDEBAR: History of Campaigns (Isolated by user session) */}
         <aside 
           className={`fixed top-0 left-0 h-full w-96 bg-[var(--bg-base)] border-r border-[var(--line)] shadow-2xl z-50 p-5 flex flex-col gap-4 transform transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-y-auto ${
             isHistoryOpen ? 'translate-x-0' : '-translate-x-full'
@@ -450,7 +489,7 @@ function LagoonedgeComponent() {
           <div className="flex items-center justify-between pb-3 border-b border-[var(--line)] mt-1">
             <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--sea-ink)] flex items-center gap-1.5">
               <Clock className="h-3.5 w-3.5 text-[var(--sea-ink-soft)]" />
-              <span>Historie kampaní</span>
+              <span>Moje kampaně</span>
             </h2>
             <div className="flex items-center gap-2">
 
@@ -473,9 +512,17 @@ function LagoonedgeComponent() {
 
           <div className="flex flex-col gap-2">
             {history.length === 0 ? (
-              <p className="text-xs text-[var(--sea-ink-soft)] italic p-4 text-center">
-                Žádné předchozí kampaně.
-              </p>
+              <div className="text-center py-10 px-4 flex flex-col items-center gap-2.5">
+                <div className="w-10 h-10 rounded-full bg-[var(--surface)] flex items-center justify-center border border-[var(--line)]">
+                  <Clock className="h-5 w-5 text-[var(--sea-ink-soft)]" />
+                </div>
+                <p className="text-xs font-semibold text-[var(--sea-ink)]">
+                  Zatím nemáte žádné kampaně
+                </p>
+                <p className="text-[11px] text-[var(--sea-ink-soft)] leading-relaxed">
+                  Zde se zobrazují pouze vámi vytvořené kampaně v této relaci.
+                </p>
+              </div>
             ) : (
               history.map((item: any) => {
                 const cleanUrl = item.url.replace(/^https?:\/\/(www\.)?/i, '')
