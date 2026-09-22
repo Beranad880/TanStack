@@ -9,7 +9,7 @@ CREATE TABLE `ads` (
 	`image_url` text,
 	`created_at` text NOT NULL,
 	`updated_at` text NOT NULL,
-	FOREIGN KEY (`site_id`) REFERENCES `sites`(`id`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`site_id`) REFERENCES `sites`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE TABLE `brand_profiles` (
@@ -23,13 +23,31 @@ CREATE TABLE `brand_profiles` (
 	`color_palette` text NOT NULL,
 	`candidate_images` text NOT NULL,
 	`created_at` text NOT NULL,
-	FOREIGN KEY (`site_id`) REFERENCES `sites`(`id`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`site_id`) REFERENCES `sites`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE TABLE `protocols` (
+	`id` integer PRIMARY KEY NOT NULL,
+	`timestamp` text,
+	`status` text NOT NULL,
+	`ip` text,
+	`user_agent` text,
+	`details` text NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE `sites` (
 	`id` text PRIMARY KEY NOT NULL,
 	`url` text NOT NULL,
+	`session_id` text,
+	`ip` text,
 	`latency_ms` integer NOT NULL,
 	`cost_usd` real NOT NULL,
 	`created_at` text NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE `todos` (
+	`id` integer PRIMARY KEY NOT NULL,
+	`text` text NOT NULL,
+	`completed` integer DEFAULT false NOT NULL,
+	`created_at` text
 );

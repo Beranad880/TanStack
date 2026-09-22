@@ -20,6 +20,7 @@ export const sites = sqliteTable('sites', {
   id: text('id').primaryKey(),
   url: text('url').notNull(),
   sessionId: text('session_id'),
+  ip: text('ip'),
   latencyMs: integer('latency_ms').notNull(),
   costUsd: real('cost_usd').notNull(),
   createdAt: text('created_at').notNull(),

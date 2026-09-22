@@ -7,6 +7,7 @@ import { desc, eq, and } from 'drizzle-orm'
 import { runAdGenerationPipeline } from '../lib/services/pipeline'
 import { generateAds } from '../lib/services/ai'
 import { getOrCreateSessionId } from '../lib/session'
+import { getRateLimitStats, getClientIp, type RateLimitStats } from '../lib/rate-limit'
 // @ts-ignore - cloudflare:workers je virtuální modul poskytovaný Vite pluginem
 import { env } from 'cloudflare:workers'
 import { 
@@ -16,13 +17,27 @@ import {
 
 // --- SERVER FUNCTIONS ---
 
-// 1. Load data helper (user's history + selected site metadata isolated by session)
+const DEFAULT_LIMITS: RateLimitStats = {
+  userDailyUsed: 0,
+  userDailyLimit: 10,
+  userRemaining: 10,
+  globalDailyUsed: 0,
+  globalDailyLimit: 100,
+  globalRemaining: 100,
+  isLimited: false,
+}
+
+// 1. Load data helper (user's history + selected site metadata + rate limits)
 const getLagoonedgeDataFn = createServerFn({ method: 'GET' })
   .validator((siteId?: string) => siteId)
   .handler(async ({ data: siteId }) => {
     try {
       const sessionId = await getOrCreateSessionId()
+      const clientIp = getClientIp()
       const db = await getDb()
+
+      // Calculate current rate limit stats
+      const limits = await getRateLimitStats(db, sessionId, clientIp)
       
       // Load only sites for current user session (isolated, not global)
       const historyList = await db
@@ -66,11 +81,12 @@ const getLagoonedgeDataFn = createServerFn({ method: 'GET' })
 
       return {
         history: historyList,
-        selected: selectedData
+        selected: selectedData,
+        limits
       }
     } catch (error: any) {
       console.error('getLagoonedgeDataFn failed:', error.message)
-      return { history: [], selected: null }
+      return { history: [], selected: null, limits: DEFAULT_LIMITS }
     }
   })
 
@@ -86,7 +102,14 @@ const generateLagoonedgeAdsFn = createServerFn({ method: 'POST' })
 
     try {
       const sessionId = await getOrCreateSessionId()
+      const clientIp = getClientIp()
       const db = await getDb()
+
+      // Enforce rate limiting before running heavy Puppeteer & Gemini pipeline
+      const limits = await getRateLimitStats(db, sessionId, clientIp)
+      if (limits.isLimited) {
+        throw new Error(limits.limitReason || 'Překročen limit generování.')
+      }
       
       // Run the pipeline
       const pipelineResult = await runAdGenerationPipeline(sanitizedUrl, env as any)
@@ -94,11 +117,12 @@ const generateLagoonedgeAdsFn = createServerFn({ method: 'POST' })
       const siteId = crypto.randomUUID()
       const profileId = crypto.randomUUID()
 
-      // Insert Site record with sessionId to link campaign to user
+      // Insert Site record with sessionId and ip to link campaign to user
       await db.insert(sites).values({
         id: siteId,
         url: sanitizedUrl,
         sessionId,
+        ip: clientIp || null,
         latencyMs: pipelineResult.latencyMs,
         costUsd: pipelineResult.costUsd,
         createdAt: new Date().toISOString()
@@ -303,7 +327,7 @@ export const Route = createFileRoute('/lagoonedge')({
 })
 
 function LagoonedgeComponent() {
-  const { history, selected } = Route.useLoaderData()
+  const { history, selected, limits } = Route.useLoaderData()
   const { siteId } = Route.useSearch()
   const router = useRouter()
   
@@ -331,6 +355,11 @@ function LagoonedgeComponent() {
   const handleGenerate = (e: React.FormEvent) => {
     e.preventDefault()
     if (!inputUrl.trim()) return
+
+    if (limits?.isLimited) {
+      setErrorMsg(limits.limitReason || 'Denní limit generování byl vyčerpán.')
+      return
+    }
 
     setErrorMsg('')
     setLoadingStep('Krok 1/3: Stahování a renderování webu...')
@@ -510,6 +539,17 @@ function LagoonedgeComponent() {
             </div>
           </div>
 
+          {/* User Credits Status in Sidebar */}
+          <div className="flex items-center justify-between p-2.5 px-3 rounded-xl border border-[var(--line)] bg-[var(--surface)]/50 text-[11px]">
+            <div className="flex items-center gap-1.5">
+              <span className={`w-1.5 h-1.5 rounded-full ${limits.isLimited ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+              <span className="text-[var(--sea-ink-soft)]">Vaše kredity dnes:</span>
+            </div>
+            <span className="font-bold text-[var(--sea-ink)]">
+              {limits.userRemaining} / {limits.userDailyLimit}
+            </span>
+          </div>
+
           <div className="flex flex-col gap-2">
             {history.length === 0 ? (
               <div className="text-center py-10 px-4 flex flex-col items-center gap-2.5">
@@ -581,6 +621,22 @@ function LagoonedgeComponent() {
             </div>
 
             <form onSubmit={handleGenerate} className="island-shell p-8 rounded-[2rem] flex flex-col gap-6 shadow-md">
+              {/* Modern Credits / Rate limit Status Pill */}
+              <div className="flex items-center justify-between p-3 px-4 rounded-xl border border-[var(--line)] bg-[var(--surface)]/60 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${limits.isLimited ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'}`} />
+                  <span className="font-semibold text-[var(--sea-ink)]">
+                    Denní kredity:{' '}
+                    <span className={limits.userRemaining <= 2 ? 'text-amber-600 font-bold dark:text-amber-400' : 'text-emerald-600 font-bold dark:text-emerald-400'}>
+                      {limits.userRemaining} / {limits.userDailyLimit}
+                    </span>
+                  </span>
+                </div>
+                <div className="text-[11px] text-[var(--sea-ink-soft)]">
+                  Kapacita appky: <span className="font-semibold text-[var(--sea-ink)]">{limits.globalRemaining} / {limits.globalDailyLimit}</span>
+                </div>
+              </div>
+
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-bold text-[var(--sea-ink-soft)] uppercase tracking-wider">URL adresa firmy</label>
                 <div className="relative">
@@ -588,14 +644,22 @@ function LagoonedgeComponent() {
                     type="text"
                     value={inputUrl}
                     onChange={(e) => setInputUrl(e.target.value)}
-                    disabled={isPending}
+                    disabled={isPending || limits.isLimited}
+                    placeholder="např. nike.com nebo gymbeam.cz"
                     required
-                    className="demo-input p-3 text-sm rounded-xl"
+                    className="demo-input p-3 text-sm rounded-xl disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
               </div>
 
-              {errorMsg && (
+              {limits.isLimited && (
+                <div className="text-xs font-semibold text-amber-800 dark:text-amber-200 bg-amber-500/10 p-3.5 rounded-xl border border-amber-500/30 flex items-start gap-2.5">
+                  <Zap className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                  <span>{limits.limitReason}</span>
+                </div>
+              )}
+
+              {errorMsg && !limits.isLimited && (
                 <div className="text-xs font-semibold text-red-600 dark:text-red-400 bg-red-100/30 p-3 rounded-lg border border-red-500/20">
                   ⚠️ {errorMsg}
                 </div>
@@ -603,13 +667,18 @@ function LagoonedgeComponent() {
 
               <button
                 type="submit"
-                disabled={isPending}
-                className="demo-button w-full rounded-xl py-3.5 flex justify-center items-center gap-2"
+                disabled={isPending || limits.isLimited}
+                className="demo-button w-full rounded-xl py-3.5 flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
                     <span>Skenování a analýza...</span>
+                  </>
+                ) : limits.isLimited ? (
+                  <>
+                    <Zap className="h-4 w-4 text-amber-500" />
+                    <span>Denní limit vyčerpán</span>
                   </>
                 ) : (
                   <>
