@@ -7,7 +7,7 @@ import { desc, eq, and } from 'drizzle-orm'
 import { runAdGenerationPipeline } from '../lib/services/pipeline'
 import { generateAds } from '../lib/services/ai'
 import { getOrCreateSessionId } from '../lib/session'
-import { getRateLimitStats, getClientIp, type RateLimitStats } from '../lib/rate-limit'
+import { getRateLimitStats, getClientIp, type RateLimitStats, RATE_LIMIT_CONFIG } from '../lib/rate-limit'
 // @ts-ignore - cloudflare:workers je virtuální modul poskytovaný Vite pluginem
 import { env } from 'cloudflare:workers'
 import { 
@@ -19,11 +19,11 @@ import {
 
 const DEFAULT_LIMITS: RateLimitStats = {
   userDailyUsed: 0,
-  userDailyLimit: 10,
-  userRemaining: 10,
+  userDailyLimit: RATE_LIMIT_CONFIG.USER_DAILY_LIMIT,
+  userRemaining: RATE_LIMIT_CONFIG.USER_DAILY_LIMIT,
   globalDailyUsed: 0,
-  globalDailyLimit: 100,
-  globalRemaining: 100,
+  globalDailyLimit: RATE_LIMIT_CONFIG.GLOBAL_DAILY_LIMIT,
+  globalRemaining: RATE_LIMIT_CONFIG.GLOBAL_DAILY_LIMIT,
   isLimited: false,
 }
 

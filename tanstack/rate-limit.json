@@ -1,0 +1,20 @@
+{
+  "userLimits": {
+    "perMinute": 3,
+    "perHour": 5,
+    "perDay": 5,
+    "perMonth":  50
+  },
+  "globalLimits": {
+    "perDay": 1000,
+    "perMonth": 3000
+  },
+  "messages": {
+    "perMinuteExceeded": "Příliš mnoho požadavků za minutu (max {limit}). Zkuste to za chvíli.",
+    "perHourExceeded": "Příliš mnoho požadavků za poslední hodinu (max {limit}). Zkuste to prosím později.",
+    "perDayExceeded": "Vyčerpali jste svůj denní limit ({limit} požadavků). Obnoví se o půlnoci.",
+    "perMonthExceeded": "Vyčerpali jste svůj měsíční limit ({limit} požadavků). Obnoví se začátkem příštího měsíce.",
+    "globalDailyExceeded": "Byla vyčerpána celková denní kapacita aplikace ({limit} požadavků). Obnoví se o půlnoci.",
+    "globalMonthlyExceeded": "Byla vyčerpána celková měsíční kapacita aplikace ({limit} požadavků). Obnoví se začátkem měsíce."
+  }
+}
