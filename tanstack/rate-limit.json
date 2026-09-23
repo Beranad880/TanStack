@@ -6,8 +6,8 @@
     "perMonth":  50
   },
   "globalLimits": {
-    "perDay": 1000,
-    "perMonth": 3000
+    "perDay": 100,
+    "perMonth": 1000
   },
   "messages": {
     "perMinuteExceeded": "Příliš mnoho požadavků za minutu (max {limit}). Zkuste to za chvíli.",

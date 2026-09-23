@@ -626,15 +626,12 @@ function LagoonedgeComponent() {
                 <div className="flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full ${limits.isLimited ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'}`} />
                   <span className="font-semibold text-[var(--sea-ink)]">
-                    Denní kredity:{' '}
-                    <span className={limits.userRemaining <= 2 ? 'text-amber-600 font-bold dark:text-amber-400' : 'text-emerald-600 font-bold dark:text-emerald-400'}>
-                      {limits.userRemaining} / {limits.userDailyLimit}
-                    </span>
+                    Denní kredity
                   </span>
                 </div>
-                <div className="text-[11px] text-[var(--sea-ink-soft)]">
-                  Kapacita appky: <span className="font-semibold text-[var(--sea-ink)]">{limits.globalRemaining} / {limits.globalDailyLimit}</span>
-                </div>
+                <span className={`font-bold ${limits.userRemaining <= 2 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                  {limits.userRemaining} / {limits.userDailyLimit}
+                </span>
               </div>
 
               <div className="flex flex-col gap-2">
