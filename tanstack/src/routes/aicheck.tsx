@@ -10,7 +10,8 @@ const askGroqFn = createServerFn({ method: 'POST' })
   .validator((d: { prompt: string }) => d)
   .handler(async ({ data }) => {
     try {
-      const apiKey = (env as any).GROQ_API_KEY || (env as any).GEMINI_API_KEY
+      const rawKey = (env as any).GROQ_API_KEY || (env as any).GEMINI_API_KEY
+      const apiKey = typeof rawKey === 'string' ? rawKey.trim().replace(/^["']|["']$/g, '') : ''
 
       if (!apiKey) {
         return {
@@ -19,7 +20,7 @@ const askGroqFn = createServerFn({ method: 'POST' })
         }
       }
 
-      const modelName = groqConfig.model || 'llama-3.3-70b-versatile'
+      const modelName = groqConfig.model || 'openai/gpt-oss-120b'
       const url = 'https://api.groq.com/openai/v1/chat/completions'
       let response;
       for (let attempt = 1; attempt <= 3; attempt++) {

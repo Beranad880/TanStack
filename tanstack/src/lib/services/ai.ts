@@ -78,7 +78,7 @@ async function callGroq(
   apiKey: string,
   jsonMode: boolean = true
 ): Promise<any> {
-  const modelName = groqConfig.model || 'llama-3.3-70b-versatile';
+  const modelName = groqConfig.model || 'openai/gpt-oss-120b';
   const url = 'https://api.groq.com/openai/v1/chat/completions';
 
   const messages: Array<{ role: 'system' | 'user'; content: string }> = [];
@@ -149,7 +149,8 @@ export async function extractBrandProfile(
   candidateImages: string[],
   env: { GROQ_API_KEY?: string; GEMINI_API_KEY?: string }
 ): Promise<BrandProfileInput> {
-  const apiKey = env.GROQ_API_KEY || env.GEMINI_API_KEY;
+  const rawKey = env.GROQ_API_KEY || env.GEMINI_API_KEY;
+  const apiKey = typeof rawKey === 'string' ? rawKey.trim().replace(/^["']|["']$/g, '') : '';
   if (!apiKey) {
     throw new Error('GROQ_API_KEY není v konfiguraci Workers nastaven. Přidejte jej prosím do Cloudflare Settings -> Variables (nebo souboru .dev.vars).');
   }
@@ -210,7 +211,8 @@ export async function generateAds(
   env: { GROQ_API_KEY?: string; GEMINI_API_KEY?: string },
   count: number = 3
 ): Promise<AdOutput[]> {
-  const apiKey = env.GROQ_API_KEY || env.GEMINI_API_KEY;
+  const rawKey = env.GROQ_API_KEY || env.GEMINI_API_KEY;
+  const apiKey = typeof rawKey === 'string' ? rawKey.trim().replace(/^["']|["']$/g, '') : '';
   if (!apiKey) {
     throw new Error('GROQ_API_KEY není v konfiguraci Workers nastaven. Přidejte jej prosím do Cloudflare Settings -> Variables (nebo souboru .dev.vars).');
   }
