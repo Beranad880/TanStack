@@ -78,7 +78,7 @@ async function callGroq(
   apiKey: string,
   jsonMode: boolean = true
 ): Promise<any> {
-  const modelName = groqConfig.model || 'openai/gpt-oss-120b';
+  const modelName = groqConfig.model || 'qwen/qwen3.8-27b';
   const url = 'https://api.groq.com/openai/v1/chat/completions';
 
   const messages: Array<{ role: 'system' | 'user'; content: string }> = [];
@@ -155,21 +155,23 @@ export async function extractBrandProfile(
     throw new Error('GROQ_API_KEY není v konfiguraci Workers nastaven. Přidejte jej prosím do Cloudflare Settings -> Variables (nebo souboru .dev.vars).');
   }
 
-  const prompt = `You are an expert brand analyst. You analyze clean text content of a website and extract a structured brand profile.
-Do not invent or hallucinate any facts. If you cannot find the answer, use 'not found'.
-Respond entirely in Czech (čeština).
+  const prompt = `Jsi expert na analýzu značek a firemní identity. Analyzuj text z webu a extrahuj strukturovaný profil značky.
+Nevymýšlej si fakta. Pokud informaci nelze dohledat, uveď 'not found'.
 
-You MUST respond strictly with a valid JSON object matching this schema:
+STRIKTNÍ JAZYKOVÉ PRAVIDLO:
+Všechny textové hodnoty v JSONu (description, targetAudience, valueProposition, toneOfVoice) MUSÍŠ napsat VÝHRADNĚ V ČEŠTINĚ.
+
+Odpověz striktně validním JSON objektem v tomto formátu:
 {
-  "companyName": "Name of the company or 'not found'",
-  "description": "Short 1-2 sentence description of what the company does or 'not found'",
-  "targetAudience": "Description of the target customer/audience or 'not found'",
-  "valueProposition": "The main value proposition/benefits or 'not found'",
-  "toneOfVoice": "1-3 descriptive adjectives for the tone of voice or 'not found'",
-  "colorPalette": ["#000000", "#FFFFFF"] // List of 3-6 distinct primary and secondary brand colors in hex format
+  "companyName": "Název firmy nebo 'not found'",
+  "description": "Stručný popis činnosti firmy (1-2 věty) v češtině nebo 'not found'",
+  "targetAudience": "Popis cílové skupiny zákazníků v češtině nebo 'not found'",
+  "valueProposition": "Hlavní hodnota a přínos pro zákazníky v češtině nebo 'not found'",
+  "toneOfVoice": "1-3 přídavná jména vystihující tón komunikace v češtině nebo 'not found'",
+  "colorPalette": ["#000000", "#FFFFFF"] // Seznam 3-6 primárních brandových barev v hex kódu
 }
 
-Website Clean Text Content:
+Obsah webu:
 ${cleanedText}`;
 
   try {
@@ -217,40 +219,42 @@ export async function generateAds(
     throw new Error('GROQ_API_KEY není v konfiguraci Workers nastaven. Přidejte jej prosím do Cloudflare Settings -> Variables (nebo souboru .dev.vars).');
   }
 
-  const prompt = `You are a senior copywriter and creative director. Based on the provided brand profile and candidate images, you generate advertisements.
-Evaluate the quality and depth of the provided brand profile. Based on how detailed and rich the information is, generate between 1 and ${count} diverse, high-performing ads. If the profile is very basic or lacks detail, generate only 1 or 2 ads. If it is rich, generate up to ${count} ads.
-All generated content MUST be in Czech language (čeština).
+  const prompt = `Jsi zkušený český marketingový copywriter a kreativní ředitel. Na základě profilu značky a kandidátských obrázků vygeneruj reklamy.
+Vyhodnoť hloubku a kvalitu profilu značky a vygeneruj mezi 1 a ${count} rozmanitých reklamních variant.
 
-CRITICAL RULES FOR DIVERSITY AND RELEVANCE:
-1. Every single ad MUST have a COMPLETELY UNIQUE primary text, headline, and description. DO NOT repeat the same phrases or sentences. All text must be in Czech.
-2. Every single ad MUST use a DIFFERENT imageUrl. You must select different images from the Candidate Images list. DO NOT use the same imageUrl twice.
-3. If there are not enough images, you can use null, but try your best to use unique images.
-4. The generated ad text (primaryText, headline, description) MUST be highly relevant to the visual content or context of the specific image (imageUrl) you choose for that ad. Align the creative idea and copy with what the selected image likely represents.
+STRIKTNÍ JAZYKOVÉ PRAVIDLO:
+VŠECHEN vygenerovaný obsah a texty reklam (creativeIdea, primaryText, headline, description, cta) MUSÍ BÝT VYGENEROVÁNY VÝHRADNĚ V ČEŠTINĚ. Žádné anglické texty!
 
-You MUST respond strictly with a valid JSON object matching this schema:
+KRITICKÁ PRAVIDLA PRO REKLAMY:
+1. Každá jednotlivá reklama MUSÍ mít ZCELA UNIKÁTNÍ hlavní text (primaryText), titulek (headline) a popisek (description). Neopakuj stejná slova ani fráze. Vše v přirozené a poutavé češtině.
+2. Každá reklama MUSÍ použít JINÝ imageUrl ze seznamu kandidátů. Nepoužívej stejný obrázek dvakrát.
+3. Pokud není dostatek obrázků, můžeš použít null, ale snaž se vybrat nejlepší kandidáty.
+4. Text reklamy musí úzce souviset s vybraným obrázkem (imageUrl).
+
+Odpověz striktně validním JSON objektem v tomto formátu:
 {
   "ads": [
     {
-      "creativeIdea": "Short description of the creative concept behind this ad",
-      "primaryText": "The main ad copy text (2-3 sentences max)",
-      "headline": "A catchy, bold headline (6-10 words)",
-      "description": "A short supporting description or tagline",
-      "cta": "Call to action text, e.g. Zjistit více, Vyzkoušet nyní",
-      "imageUrl": "Choose the most relevant image URL from the Candidate Images list. If empty, null"
+      "creativeIdea": "Stručný popis kreativního konceptu za touto reklamou v češtině",
+      "primaryText": "Hlavní text reklamy (max 2-3 věty) v češtině",
+      "headline": "Úderný, chytlavý titulek (6-10 slov) v češtině",
+      "description": "Doprovodný popisek nebo slogan v češtině",
+      "cta": "Text výzvy k akci v češtině, např. Zjistit více, Vyzkoušet hned, Objednat",
+      "imageUrl": "Vyber nejvhodnější URL obrázku ze seznamu kandidátů. Pokud žádný nepasuje, null"
     }
   ]
 }
 
-Brand Profile:
-Company Name: ${brandProfile.companyName}
-Description: ${brandProfile.description}
-Target Audience: ${brandProfile.targetAudience}
-Value Proposition: ${brandProfile.valueProposition}
-Tone of Voice: ${brandProfile.toneOfVoice}
-Colors: ${brandProfile.colorPalette.join(', ')}
+Profil značky:
+Název firmy: ${brandProfile.companyName}
+Popis: ${brandProfile.description}
+Cílová skupina: ${brandProfile.targetAudience}
+Hlavní přínos: ${brandProfile.valueProposition}
+Tón komunikace: ${brandProfile.toneOfVoice}
+Barvy: ${brandProfile.colorPalette.join(', ')}
 
-Candidate Images (select ONLY from this list):
-${candidateImages.length > 0 ? candidateImages.join('\n') : 'No images available'}`;
+Kandidátské obrázky (vybírej POUZE z tohoto seznamu):
+${candidateImages.length > 0 ? candidateImages.join('\n') : 'Žádné obrázky nejsou k dispozici'}`;
 
   try {
     const parsed = await callGroq(prompt, groqConfig.systemInstruction, apiKey, true);

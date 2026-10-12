@@ -20,7 +20,7 @@ const askGroqFn = createServerFn({ method: 'POST' })
         }
       }
 
-      const modelName = groqConfig.model || 'openai/gpt-oss-120b'
+      const modelName = groqConfig.model || 'qwen/qwen3.8-27b'
       const url = 'https://api.groq.com/openai/v1/chat/completions'
       let response;
       for (let attempt = 1; attempt <= 3; attempt++) {
@@ -33,6 +33,10 @@ const askGroqFn = createServerFn({ method: 'POST' })
           body: JSON.stringify({
             model: modelName,
             messages: [
+              {
+                role: 'system',
+                content: groqConfig.systemInstruction || 'Odpovídej vždy výhradně v češtině.'
+              },
               {
                 role: 'user',
                 content: data.prompt
@@ -110,7 +114,7 @@ function AiCheckComponent() {
     <main className="flex min-h-screen items-center justify-center p-4">
       <section className="island-shell rise-in max-w-2xl w-full rounded-[2rem] p-8 sm:p-12">
         <h1 className="display-title mb-6 text-3xl font-extrabold text-[var(--sea-ink)] text-center capitalize">
-          Agent Groq (Llama 3.3)
+          Agent Groq (Qwen 3.8 27B)
         </h1>
 
         <div className="flex flex-col gap-4">
