@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { Compass, Database, Cpu, Chrome, ArrowLeft } from 'lucide-react'
+import { Database, Cpu, Chrome, ArrowLeft } from 'lucide-react'
 
 export const Route = createFileRoute('/test')({
   component: TestHubComponent,
@@ -62,8 +62,8 @@ function TestHubComponent() {
                 <Cpu className="h-5 w-5" />
               </div>
               <div>
-                <span className="font-bold text-sm block">AI Modely (Gemini)</span>
-                <span className="text-[10px] text-[var(--sea-ink-soft)]">Volání agenta Gemini</span>
+                <span className="font-bold text-sm block">AI Modely (Groq)</span>
+                <span className="text-[10px] text-[var(--sea-ink-soft)]">Volání Groq API (Llama 3.3)</span>
               </div>
             </div>
             <span className="text-xs font-bold text-[var(--sea-ink-soft)] bg-[var(--sand)] px-2.5 py-1 rounded-full">/aicheck</span>

@@ -3,38 +3,42 @@ import { createServerFn } from '@tanstack/react-start'
 // @ts-ignore: cloudflare:workers is a virtual module provided by Vite plugin
 import { env } from 'cloudflare:workers'
 import { useState } from 'react'
-import geminiConfig from '../../gemini-config.json'
+import groqConfig from '../../groq-config.json'
 
-// Serverová funkce pro volání Google Gemini - běžící výhradně na serveru
-const askGeminiFn = createServerFn({ method: 'POST' })
+// Serverová funkce pro volání Groq API - běžící výhradně na serveru přes nativní fetch
+const askGroqFn = createServerFn({ method: 'POST' })
   .validator((d: { prompt: string }) => d)
   .handler(async ({ data }) => {
     try {
-      const apiKey = (env as any).GEMINI_API_KEY
+      const apiKey = (env as any).GROQ_API_KEY || (env as any).GEMINI_API_KEY
 
       if (!apiKey) {
         return {
           success: false,
-          error: 'API klíč "GEMINI_API_KEY" nebyl nalezen v konfiguraci Workers.'
+          error: 'API klíč "GROQ_API_KEY" nebyl nalezen v konfiguraci Workers (ani v souboru .dev.vars).'
         }
       }
 
-      const modelName = geminiConfig.model || 'gemini-2.5-flash'
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`
+      const modelName = groqConfig.model || 'llama-3.3-70b-versatile'
+      const url = 'https://api.groq.com/openai/v1/chat/completions'
       let response;
       for (let attempt = 1; attempt <= 3; attempt++) {
         response = await fetch(url, {
           method: 'POST',
           headers: {
+            'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            contents: [
+            model: modelName,
+            messages: [
               {
                 role: 'user',
-                parts: [{ text: data.prompt }]
+                content: data.prompt
               }
-            ]
+            ],
+            temperature: groqConfig.temperature ?? 0.7,
+            top_p: groqConfig.top_p ?? 0.95
           })
         })
 
@@ -44,23 +48,23 @@ const askGeminiFn = createServerFn({ method: 'POST' })
 
         const errorText = await response.text()
         if ((response.status === 503 || response.status === 429) && attempt < 3) {
-          console.warn(`Gemini API ${response.status}, retrying in ${attempt * 2}s...`);
+          console.warn(`Groq API ${response.status}, retrying in ${attempt * 2}s...`);
           await new Promise(r => setTimeout(r, attempt * 2000));
           continue;
         }
 
         return {
           success: false,
-          error: `Gemini API error (HTTP ${response.status}): ${errorText}`
+          error: `Groq API error (HTTP ${response.status}): ${errorText}`
         }
       }
 
       if (!response) {
-        return { success: false, error: 'Gemini API fetch failed' }
+        return { success: false, error: 'Groq API fetch failed' }
       }
 
-      const result = await response.json()
-      const text = result.candidates?.[0]?.content?.parts?.[0]?.text
+      const result: any = await response.json()
+      const text = result.choices?.[0]?.message?.content
 
       if (!text) {
         return { success: false, error: 'Model vrátil prázdnou odpověď nebo neočekávanou strukturu.' }
@@ -68,7 +72,7 @@ const askGeminiFn = createServerFn({ method: 'POST' })
 
       return { success: true, text }
     } catch (error: any) {
-      console.error('Gemini AI Error:', error)
+      console.error('Groq AI Error:', error)
       return { success: false, error: error.message || String(error) }
     }
   })
@@ -83,12 +87,12 @@ function AiCheckComponent() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleAskGemini = async () => {
+  const handleAskGroq = async () => {
     setLoading(true)
     setError(null)
     setResponse(null)
     try {
-      const res = await askGeminiFn({ data: { prompt } })
+      const res = await askGroqFn({ data: { prompt } })
       if (res.success) {
         setResponse(res.text || null)
       } else {
@@ -105,13 +109,13 @@ function AiCheckComponent() {
     <main className="flex min-h-screen items-center justify-center p-4">
       <section className="island-shell rise-in max-w-2xl w-full rounded-[2rem] p-8 sm:p-12">
         <h1 className="display-title mb-6 text-3xl font-extrabold text-[var(--sea-ink)] text-center capitalize">
-          Agent Gemini
+          Agent Groq (Llama 3.3)
         </h1>
 
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
             <label className="text-xs font-semibold text-[var(--sea-ink-soft)] uppercase tracking-wider">
-              Otázka pro model Gemini (Prompt)
+              Otázka pro model Groq (Prompt)
             </label>
             <textarea
               value={prompt}
@@ -124,16 +128,16 @@ function AiCheckComponent() {
           </div>
 
           <button
-            onClick={handleAskGemini}
+            onClick={handleAskGroq}
             disabled={loading || !prompt.trim()}
             className="demo-button w-full relative z-10 rounded-full px-6 py-3 shadow-md transition-all hover:scale-[1.01]"
           >
-            {loading ? 'Generování odpovědi přes agenta Gemini...' : 'Odeslat dotaz do Gemini'}
+            {loading ? 'Generování odpovědi přes Groq API...' : 'Odeslat dotaz do Groq'}
           </button>
 
           {error && (
             <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-4 text-rose-800 dark:text-rose-300 text-sm">
-              <p className="font-semibold">🔴 Chyba při volání Gemini API:</p>
+              <p className="font-semibold">🔴 Chyba při volání Groq API:</p>
               <p className="text-xs mt-2 font-mono break-all bg-black/5 dark:bg-black/20 p-2 rounded">{error}</p>
             </div>
           )}
@@ -141,7 +145,7 @@ function AiCheckComponent() {
           {response && (
             <div className="flex flex-col gap-2 border-t border-[var(--line)] pt-4 w-full">
               <p className="font-semibold text-xs text-[var(--sea-ink-soft)] uppercase tracking-wider">
-                Odpověď z modelu Gemini:
+                Odpověď z modelu Groq:
               </p>
               <div className="p-4 rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.4)] dark:bg-[rgba(10,20,24,0.4)] text-sm leading-relaxed text-[var(--sea-ink)] max-h-80 overflow-y-auto whitespace-pre-wrap font-sans">
                 {response}

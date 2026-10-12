@@ -220,7 +220,7 @@ const saveAdEditFn = createServerFn({ method: 'POST' })
     }
   })
 
-// 4. Regenerate a single ad concept using Gemini
+// 4. Regenerate a single ad concept using Groq
 const regenerateAdFn = createServerFn({ method: 'POST' })
   .validator((data: { siteId: string; adId: string; preferredImageUrl?: string; currentImageUrl?: string }) => data)
   .handler(async ({ data }) => {
@@ -264,7 +264,7 @@ const regenerateAdFn = createServerFn({ method: 'POST' })
         }
       }
 
-      // Call Gemini to generate exactly 1 ad
+      // Call Groq to generate exactly 1 ad
       const generatedAds = await generateAds(
         {
           companyName: profile.companyName,
