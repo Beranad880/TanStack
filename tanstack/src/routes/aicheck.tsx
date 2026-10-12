@@ -20,7 +20,7 @@ const askGroqFn = createServerFn({ method: 'POST' })
         }
       }
 
-      const modelName = groqConfig.model || 'qwen/qwen3.8-27b'
+      const modelName = groqConfig.model || 'openai/gpt-oss-120b'
       const url = 'https://api.groq.com/openai/v1/chat/completions'
       let response;
       for (let attempt = 1; attempt <= 3; attempt++) {
@@ -114,7 +114,7 @@ function AiCheckComponent() {
     <main className="flex min-h-screen items-center justify-center p-4">
       <section className="island-shell rise-in max-w-2xl w-full rounded-[2rem] p-8 sm:p-12">
         <h1 className="display-title mb-6 text-3xl font-extrabold text-[var(--sea-ink)] text-center capitalize">
-          Agent Groq (Qwen 3.8 27B)
+          Agent Groq (GPT-OSS 120B)
         </h1>
 
         <div className="flex flex-col gap-4">

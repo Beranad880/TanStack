@@ -78,7 +78,7 @@ async function callGroq(
   apiKey: string,
   jsonMode: boolean = true
 ): Promise<any> {
-  const modelName = groqConfig.model || 'qwen/qwen3.8-27b';
+  const modelName = groqConfig.model || 'openai/gpt-oss-120b';
   const url = 'https://api.groq.com/openai/v1/chat/completions';
 
   const messages: Array<{ role: 'system' | 'user'; content: string }> = [];

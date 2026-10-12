@@ -63,7 +63,7 @@ function TestHubComponent() {
               </div>
               <div>
                 <span className="font-bold text-sm block">AI Modely (Groq)</span>
-                <span className="text-[10px] text-[var(--sea-ink-soft)]">Volání Groq API (Qwen 3.8 27B)</span>
+                <span className="text-[10px] text-[var(--sea-ink-soft)]">Volání Groq API (GPT-OSS 120B)</span>
               </div>
             </div>
             <span className="text-xs font-bold text-[var(--sea-ink-soft)] bg-[var(--sand)] px-2.5 py-1 rounded-full">/aicheck</span>
